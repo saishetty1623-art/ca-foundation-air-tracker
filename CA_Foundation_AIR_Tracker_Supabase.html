@@ -1,0 +1,158 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#090d18">
+<title>CA Foundation — AIR Tracker</title>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<style>
+:root{--bg:#090d18;--card:#111827;--card2:#151e31;--line:#263149;--text:#f5f7fb;--muted:#94a3b8;--law:#55c7b7;--eco:#f0b45a;--acc:#75a8ff;--qa:#b48cff;--good:#46d58b;--warn:#f2c94c;--bad:#ff6262;--r:20px}
+*{box-sizing:border-box}html{scroll-behavior:smooth}body{margin:0;background:radial-gradient(900px 500px at 5% -10%,#75a8ff20,transparent 60%),radial-gradient(700px 500px at 100% 0,#b48cff18,transparent 60%),var(--bg);color:var(--text);font-family:Inter,system-ui,-apple-system,Segoe UI,sans-serif}.app{width:min(1280px,100%);margin:auto;padding:18px 18px 60px}
+.top{position:sticky;top:0;z-index:10;margin:-18px -18px 18px;padding:12px 18px;background:#090d18dd;backdrop-filter:blur(18px);border-bottom:1px solid #ffffff12}.topin{width:min(1280px,100%);margin:auto;display:flex;align-items:center;justify-content:space-between;gap:12px}.brand{display:flex;align-items:center;gap:10px}.logo{width:42px;height:42px;border-radius:13px;display:grid;place-items:center;background:linear-gradient(135deg,var(--acc),var(--qa));color:#07101e;font-weight:900}.brand b{display:block}.brand small{color:var(--muted);font-size:10px}.tabs{display:flex;gap:6px;overflow:auto}.tabs button{white-space:nowrap;border:1px solid var(--line);background:#ffffff05;color:var(--muted);border-radius:999px;padding:8px 12px;font-weight:700;font-size:11px}.tabs button.active{background:var(--text);color:#080d18;border-color:var(--text)}
+.hero{display:grid;grid-template-columns:1.25fr .75fr;gap:15px}.card{background:linear-gradient(180deg,#151e31f5,#0f1727f5);border:1px solid var(--line);border-radius:var(--r);box-shadow:0 18px 50px #0004}.hero .card{padding:25px}.eyebrow{text-transform:uppercase;letter-spacing:.12em;font-size:10px;color:var(--muted)}h1,h2,h3{margin:0}.hero h1{font-size:clamp(28px,4.5vw,52px);line-height:1.02;margin:8px 0 12px}.hero p{color:#cbd5e1;line-height:1.6;max-width:680px}.stats{display:grid;grid-template-columns:repeat(3,1fr);gap:9px;margin-top:20px}.stat{padding:12px;border-radius:14px;background:#ffffff06;border:1px solid #ffffff12}.stat b{font-size:23px}.stat span{display:block;color:var(--muted);font-size:9px;margin-top:2px}.count{display:flex;flex-direction:column;justify-content:space-between}.countnum{font-size:clamp(45px,7vw,70px);font-weight:900;line-height:1}.count small{color:var(--muted)}.dates{display:flex;justify-content:space-between;border-top:1px solid var(--line);padding-top:14px;color:#cbd5e1;font-size:10px}
+.grid{display:grid;grid-template-columns:1fr 1fr;gap:15px;margin-top:15px}.section{padding:18px}.head{display:flex;justify-content:space-between;align-items:end;gap:8px;margin-bottom:13px}.head h3{font-size:17px}.head span{font-size:10px;color:var(--muted)}
+.schedule{display:grid;gap:6px}.slot{display:grid;grid-template-columns:112px 1fr 24px 24px;align-items:center;gap:9px;padding:10px 11px;border-radius:13px;border:1px solid #ffffff0d;background:#ffffff04}.slot.done{opacity:.48}.slot.done .slotname{text-decoration:line-through}.slot .time{font-size:9px;color:var(--muted)}.slotname{font-size:12px;font-weight:800}.slot button{width:22px;height:22px;border-radius:7px;border:1px solid #526079;background:transparent;color:transparent}.slot button.checked{background:var(--good);border-color:var(--good);color:#07150f}.tag{font-size:8px;color:var(--c);font-weight:900}
+.subjects{display:grid;grid-template-columns:1fr 1fr;gap:9px}.sub{padding:14px;border-radius:15px;border:1px solid #ffffff10;background:#ffffff04;cursor:pointer}.sub:hover{border-color:#ffffff35}.subtop{display:flex;justify-content:space-between;gap:8px}.subname{font-size:12px;font-weight:850}.pct{font-size:11px;font-weight:900}.bar{height:7px;border-radius:99px;background:#0a1020;margin:10px 0 7px;overflow:hidden}.bar i{display:block;height:100%;border-radius:99px;background:var(--c);transition:.3s}.meta{font-size:9px;color:var(--muted)}
+.loggrid{display:grid;grid-template-columns:repeat(4,1fr);gap:8px}.field{padding:10px;border:1px solid #ffffff10;background:#ffffff04;border-radius:12px}.field label{display:block;color:var(--muted);font-size:9px;margin-bottom:5px}.field input{width:100%;border:1px solid #33415b;background:#0b1220;color:var(--text);padding:8px;border-radius:8px;outline:none;font-size:11px}.actions{display:flex;gap:8px;margin-top:10px;flex-wrap:wrap}.btn{border:1px solid var(--line);background:#182237;color:var(--text);border-radius:10px;padding:8px 11px;font-size:10px;font-weight:800;cursor:pointer}.btn.primary{background:var(--text);color:#08101c;border-color:var(--text)}.btn.danger{color:#ff9a9a}.status{margin-top:10px;padding:10px;border-radius:10px;font-size:10px;font-weight:800}.green{background:#46d58b18;color:var(--good)}.yellow{background:#f2c94c18;color:var(--warn)}.red{background:#ff626218;color:var(--bad)}
+.notice{padding:11px;border-radius:11px;background:#75a8ff10;border:1px solid #75a8ff25;color:#bfd4ff;font-size:10px;line-height:1.5}.week{display:grid;grid-template-columns:repeat(7,1fr);gap:6px}.day{padding:9px;border:1px solid #ffffff0d;background:#ffffff04;border-radius:11px;min-height:65px}.day b{font-size:10px}.day span{display:block;color:var(--muted);font-size:8px;margin-top:5px}.day.today{border-color:#fff}
+.subjecthero{padding:20px;display:flex;justify-content:space-between;gap:15px;align-items:center}.subjecthero h2{font-size:28px;margin:4px 0}.subjecthero p{font-size:10px;color:var(--muted)}.phases{display:flex;gap:5px;width:280px}.phases i{height:7px;flex:1;background:#263149;border-radius:99px}.phases i.on{background:var(--c)}.chapters{display:grid;gap:6px}.chapter{display:grid;grid-template-columns:24px 1fr auto;gap:10px;align-items:center;padding:12px;border:1px solid #ffffff0d;background:#ffffff04;border-radius:12px}.chapter input{width:18px;height:18px;accent-color:var(--c)}.chapter.done .cname{text-decoration:line-through;color:#718096}.cname{font-size:11px;font-weight:750}.weight{font-size:9px;color:var(--muted);text-align:right}
+.auth{display:flex;align-items:center;gap:7px;flex-wrap:wrap}.auth input{width:145px;border:1px solid var(--line);background:#0b1220;color:var(--text);padding:8px 9px;border-radius:9px;font-size:10px;outline:none}.auth .who{font-size:9px;color:var(--muted);max-width:190px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.cloud{display:flex;gap:6px;align-items:center}.cloud-dot{width:7px;height:7px;border-radius:50%;background:var(--muted)}.cloud-dot.on{background:var(--good);box-shadow:0 0 9px #46d58b}.cloud-dot.warn{background:var(--warn)}
+footer{text-align:center;color:#64748b;font-size:9px;margin-top:28px}
+@media(max-width:900px){.hero,.grid{grid-template-columns:1fr}}
+@media(max-width:650px){.app{padding:12px 12px 45px}.top{margin:-12px -12px 12px;padding:10px 12px}.topin{align-items:flex-start;flex-direction:column}.tabs{width:100%}.hero .card,.section{padding:15px}.stats{grid-template-columns:repeat(3,1fr)}.subjects{grid-template-columns:1fr}.loggrid{grid-template-columns:1fr 1fr}.slot{grid-template-columns:83px 1fr 22px}.tag{display:none}.subjecthero{align-items:flex-start;flex-direction:column}.phases{width:100%}.chapter{grid-template-columns:24px 1fr}.weight{display:none}.week{grid-template-columns:repeat(4,1fr)}.auth input{width:100%}.auth{width:100%}}
+</style>
+</head>
+<body>
+<div class="top"><div class="topin">
+  <div class="brand"><div class="logo">CA</div><div><b>Foundation AIR Tracker</b><small>Sep 11 → Oct 30 · First coverage</small></div></div>
+  <div class="auth">
+    <input id="email" type="email" placeholder="Email">
+    <input id="password" type="password" placeholder="Password">
+    <button class="btn" id="signup">Sign up</button>
+    <button class="btn" id="login">Log in</button>
+    <button class="btn" id="logout" style="display:none">Log out</button>
+    <button class="btn primary" id="sync" style="display:none">Sync cloud</button>
+    <span class="cloud"><i id="cloudDot" class="cloud-dot"></i><span id="authStatus" class="who">Local only</span></span>
+  </div>
+  <div class="tabs" id="tabs"></div>
+</div></div>
+<main class="app" id="app"></main>
+
+<script>
+/* ============================================================
+   SUPABASE CONFIG
+   1) Create a Supabase project.
+   2) Run the supplied SQL in SQL Editor.
+   3) Paste your Project URL and PUBLIC anon/publishable key below.
+   NEVER put the service_role/secret key in this HTML.
+   ============================================================ */
+const SUPABASE_URL = "PASTE_YOUR_SUPABASE_PROJECT_URL";
+const SUPABASE_ANON_KEY = "PASTE_YOUR_SUPABASE_ANON_OR_PUBLISHABLE_KEY";
+const SUPABASE_READY =
+  SUPABASE_URL.startsWith("https://") &&
+  !SUPABASE_URL.includes("PASTE_") &&
+  !SUPABASE_ANON_KEY.includes("PASTE_");
+
+const sb = SUPABASE_READY ? window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY) : null;
+
+const S={
+law:{name:"Business Law",short:"LAW",c:"#55c7b7",ch:[["Indian Regulatory Framework","5–8"],["Indian Contract Act, 1872","35–40"],["Sale of Goods Act, 1930","15–20"],["Indian Partnership Act, 1932","15–20"],["Companies Act, 2013","10–15"],["Negotiable Instruments Act, 1881","8–12"],["LLP Act, 2008","3–5"]]},
+eco:{name:"Business Economics",short:"ECO",c:"#f0b45a",ch:[["Introduction to Business Economics","4–6%"],["Theory of Demand and Supply","15–20%"],["Theory of Production and Cost","10–15%"],["Price Determination in Different Markets","12–15%"],["Business Cycles","5–8%"],["Determination of National Income","10–15%"],["Public Finance","8–12%"],["Money Market","10–12%"],["International Trade","10–12%"],["Indian Economy","5–8%"]]},
+accounts:{name:"Accounting",short:"ACC",c:"#75a8ff",ch:[["Theoretical Framework","8–12"],["Accounting Process","12–18"],["Bank Reconciliation Statement","4–8"],["Inventories","4–8"],["Depreciation & Amortisation","6–10"],["Bills of Exchange & Promissory Notes","6–10"],["Final Accounts of Sole Proprietors","12–20"],["Not-for-Profit Organisations","8–12"],["Accounts from Incomplete Records","8–12"],["Partnership & LLP Accounts","18–24"],["Company Accounts","12–18"]]},
+qa:{name:"Quantitative Aptitude",short:"QA",c:"#b48cff",ch:[["Ratio, Proportion, Indices & Logarithms","Maths · 40"],["Equations","Maths · 40"],["Linear Inequalities","Maths · 40"],["Mathematics of Finance","Maths · 40"],["Permutations & Combinations","Maths · 40"],["Sequence & Series (AP & GP)","Maths · 40"],["Sets, Relations & Functions, Limits & Continuity","Maths · 40"],["Applications of Differential & Integral Calculus","Maths · 40"],["Number Series, Coding-Decoding & Odd Man Out","LR · 20"],["Direction Tests","LR · 20"],["Seating Arrangements","LR · 20"],["Blood Relations","LR · 20"],["Statistical Description of Data & Sampling","Statistics · 40"],["Measures of Central Tendency & Dispersion","Statistics · 40"],["Probability","Statistics · 40"],["Theoretical Distributions","Statistics · 40"],["Correlation & Regression","Statistics · 40"],["Index Numbers","Statistics · 40"]]}
+};
+const T=[["06:10","07:30","law"],["09:45","10:30","eco"],["10:32","11:29","eco"],["12:01","13:29","qa"],["14:35","16:30","accounts"],["16:35","17:15","eco"],["18:31","20:00","accounts"],["20:32","21:30","law"],["21:32","22:00","qa"],["22:02","22:29","law"]];
+const START="2026-09-11",END="2026-10-30",EXAM="2027-01-15";
+let tab="home";
+
+const blank=()=>{let x={};Object.keys(S).forEach(k=>x[k]={p:[Array(S[k].ch.length).fill(false),Array(S[k].ch.length).fill(false),Array(S[k].ch.length).fill(false)],phase:0});return{subjects:x,logs:{}}};
+let state=JSON.parse(localStorage.getItem("ca_air_v2")||"null")||blank();
+let cloudUser=null;
+
+const save=()=>localStorage.setItem("ca_air_v2",JSON.stringify(state));
+const today=()=>new Date().toISOString().slice(0,10);
+const diff=(a,b)=>Math.floor((new Date(b)-new Date(a))/86400000);
+const D=()=>state.logs[today()]||(state.logs[today()]={slots:{},hours:"",chapters:"",win:"",problem:""});
+function pct(k){let s=state.subjects[k],n=S[k].ch.length,done=s.p[s.phase].filter(Boolean).length;return Math.round(((s.phase*n)+done)/(n*3)*100)}
+function adv(k){let s=state.subjects[k];if(s.phase<2&&s.p[s.phase].every(Boolean))s.phase++}
+function fmt(t){let [h,m]=t.split(":").map(Number),a=h>=12?"PM":"AM";h=h%12||12;return h+":"+String(m).padStart(2,"0")+" "+a}
+function date(x){return new Date(x+"T00:00:00").toLocaleDateString("en-IN",{day:"numeric",month:"short",year:"numeric"})}
+
+function tabs(){document.getElementById("tabs").innerHTML=[["home","Home"],...Object.keys(S).map(k=>[k,S[k].short])].map(x=>`<button class="${tab==x[0]?"active":""}" data-tab="${x[0]}">${x[1]}</button>`).join("");document.querySelectorAll("[data-tab]").forEach(x=>x.onclick=()=>{tab=x.dataset.tab;render()})}
+function timetable(){let d=D();return`<div class="schedule">${T.map((x,i)=>{let s=S[x[2]],done=!!d.slots["t"+i];return`<div class="slot" style="--c:${s.c}"><div class="time">${fmt(x[0])} – ${fmt(x[1])}</div><div class="slotname">${s.name}</div><span class="tag">${s.short}</span><button class="${done?"checked":""}" data-slot="${i}">${done?"✓":""}</button></div>`}).join("")}</div>`}
+function subjects(){return`<div class="subjects">${Object.keys(S).map(k=>{let s=state.subjects[k],n=S[k].ch.length,done=s.p[s.phase].filter(Boolean).length;return`<div class="sub" style="--c:${S[k].c}" data-open="${k}"><div class="subtop"><span class="subname">${S[k].name}</span><span class="pct">${pct(k)}%</span></div><div class="bar"><i style="width:${pct(k)}%"></i></div><div class="meta">${["First coverage","1st revision","2nd revision"][s.phase]} · ${done}/${n} chapters</div></div>`}).join("")}</div>`}
+function week(){let a=[];for(let i=6;i>=0;i--){let q=new Date();q.setDate(q.getDate()-i);let k=q.toISOString().slice(0,10),d=state.logs[k],n=d?Object.values(d.slots||{}).filter(Boolean).length:0;a.push(`<div class="day ${k==today()?"today":""}"><b>${q.toLocaleDateString("en-IN",{weekday:"short"})}</b><span>${k.slice(5)}</span><span>${n}/10 slots</span><span>${d?.hours||0}h</span></div>`)}return`<div class="week">${a.join("")}</div>`}
+function home(){let d=D(),done=Object.values(d.slots).filter(Boolean).length,left=Math.max(0,diff(today(),EXAM)),lecture=Math.max(0,diff(today(),END)),day=Math.max(1,diff(START,today())+1);let cls=done>=8?"green":done>=5?"yellow":"red";return`<section class="hero"><div class="card"><div class="eyebrow">130-day final attempt · Day ${day}</div><h1>Build the score one day at a time.</h1><p>First coverage now: lectures, understanding and basic practice. Revision and exam practice take over after October 30.</p><div class="stats"><div class="stat"><b>${Math.round(Object.keys(S).reduce((a,k)=>a+pct(k),0)/4)}%</b><span>overall progress</span></div><div class="stat"><b>${lecture}</b><span>days to lecture deadline</span></div><div class="stat"><b>${left}</b><span>days to target exam</span></div></div></div><div class="card count"><div><div class="eyebrow">Exam countdown</div><div class="countnum">${left}</div><small>days · target ${date(EXAM)}</small></div><div class="dates"><span>Start ${date(START)}</span><span>Lectures ${date(END)}</span></div></div></section>
+<div class="grid"><section class="card section"><div class="head"><h3>Today's timetable</h3><span>${done}/10 completed</span></div>${timetable()}</section><section class="card section"><div class="head"><h3>Subject progress</h3><span>equal priority</span></div>${subjects()}</section></div>
+<div class="grid"><section class="card section"><div class="head"><h3>End-of-day log</h3><span>log the real day</span></div><div class="loggrid"><div class="field"><label>Focused hours</label><input id="hours" type="number" step=".25" min="0" max="16" value="${d.hours}"></div><div class="field"><label>Chapters / topics</label><input id="chapters" value="${d.chapters}"></div><div class="field"><label>What went well</label><input id="win" value="${d.win}"></div><div class="field"><label>Main problem</label><input id="problem" value="${d.problem}"></div></div><div class="actions"><button class="btn primary" id="saveLog">Save log</button><button class="btn" id="clear">Clear ticks</button></div><div class="status ${cls}">${done>=8?"On track today":done>=5?"A little behind today":"Running behind today"} · ${done}/10 sessions</div></section>
+<section class="card section"><div class="head"><h3>50-day first-coverage mission</h3><span>${date(START)} → ${date(END)}</span></div><div class="notice">Average target: roughly one chapter/topic per day. Big chapters can take 2–3 days; small ones can be paired. Do not chase perfection in Phase 1.</div><div style="margin-top:12px">${subjects()}</div></section></div>
+<section class="card section" style="margin-top:15px"><div class="head"><h3>Last 7 days</h3><span>your real trend</span></div>${week()}</section>`}
+function page(k){let s=state.subjects[k],n=S[k].ch.length,phase=s.phase,done=s.p[phase].filter(Boolean).length;return`<section class="card subjecthero" style="--c:${S[k].c}"><div><div class="eyebrow">${S[k].short}</div><h2>${S[k].name}</h2><p>${["First coverage","1st revision","2nd revision"][phase]} · ${done}/${n}</p></div><div class="phases">${[0,1,2].map(i=>`<i class="${i<phase?"on":""}" style="${i==phase?"background:"+S[k].c:""}"></i>`).join("")}</div></section><section class="card section" style="margin-top:15px"><div class="head"><h3>${["First coverage","1st revision","2nd revision"][phase]}</h3><span>${done}/${n} complete</span></div><div class="notice" style="margin-bottom:12px">Fixed syllabus from your supplied chapter lists. Add/remove controls are intentionally removed.</div><div class="chapters">${S[k].ch.map((c,i)=>`<label class="chapter" style="--c:${S[k].c}"><input type="checkbox" data-ch="${i}" ${s.p[phase][i]?"checked":""}><span class="cname">${i+1}. ${c[0]}</span><span class="weight">${c[1]}</span></label>`).join("")}</div></section>`}
+
+function bind(){
+ document.querySelectorAll("[data-slot]").forEach(b=>b.onclick=()=>{let d=D(),i=b.dataset.slot;d.slots["t"+i]=!d.slots["t"+i];save();render()});
+ document.querySelectorAll("[data-open]").forEach(x=>x.onclick=()=>{tab=x.dataset.open;render();scrollTo(0,0)});
+ document.querySelectorAll("[data-ch]").forEach(x=>x.onchange=()=>{let s=state.subjects[tab];s.p[s.phase][+x.dataset.ch]=x.checked;adv(tab);save();render()});
+ let sl=document.getElementById("saveLog");if(sl)sl.onclick=()=>{let d=D();d.hours=document.getElementById("hours").value;d.chapters=document.getElementById("chapters").value;d.win=document.getElementById("win").value;d.problem=document.getElementById("problem").value;save();render();};
+ let c=document.getElementById("clear");if(c)c.onclick=()=>{D().slots={};save();render()};
+}
+function render(){tabs();document.getElementById("app").innerHTML=tab==="home"?home():page(tab);bind();updateAuthUI()}
+
+async function signUp(){
+ if(!sb)return alert("Paste your Supabase URL and anon/publishable key into the HTML first.");
+ const email=document.getElementById("email").value.trim(),password=document.getElementById("password").value;
+ if(!email||password.length<6)return alert("Enter an email and a password of at least 6 characters.");
+ const {error}=await sb.auth.signUp({email,password});
+ if(error)return alert(error.message);
+ alert("Account created. If email confirmation is enabled in Supabase, confirm your email, then log in.");
+}
+async function login(){
+ if(!sb)return alert("Paste your Supabase URL and anon/publishable key into the HTML first.");
+ const email=document.getElementById("email").value.trim(),password=document.getElementById("password").value;
+ const {data,error}=await sb.auth.signInWithPassword({email,password});
+ if(error)return alert(error.message);
+ cloudUser=data.user;updateAuthUI();
+ await pullOrPush();
+}
+async function logout(){if(sb)await sb.auth.signOut();cloudUser=null;updateAuthUI()}
+function updateAuthUI(){
+ const dot=document.getElementById("cloudDot"),st=document.getElementById("authStatus"),sync=document.getElementById("sync"),logout=document.getElementById("logout"),login=document.getElementById("login"),signup=document.getElementById("signup");
+ if(!SUPABASE_READY){dot.className="cloud-dot warn";st.textContent="Add Supabase keys";sync.style.display="none";logout.style.display="none";return}
+ if(cloudUser){dot.className="cloud-dot on";st.textContent=cloudUser.email||"Cloud account";sync.style.display="inline-block";logout.style.display="inline-block";login.style.display="none";signup.style.display="none"}
+ else{dot.className="cloud-dot";st.textContent="Not logged in";sync.style.display="none";logout.style.display="none";login.style.display="inline-block";signup.style.display="inline-block"}
+}
+async function pullOrPush(){
+ if(!sb||!cloudUser)return;
+ const {data,error}=await sb.from("tracker_state").select("state,updated_at").eq("user_id",cloudUser.id).maybeSingle();
+ if(error)return alert("Cloud read failed: "+error.message);
+ if(data && data.state && Object.keys(data.state).length){
+   const useCloud=confirm("Cloud progress found. Load cloud progress and replace this device's local tracker?");
+   if(useCloud){state=data.state;save();render();setCloudStatus("Cloud loaded");}
+   else{await pushCloud();setCloudStatus("Local kept")}
+ }else{
+   await pushCloud();
+   setCloudStatus("Local progress uploaded");
+ }
+}
+async function pushCloud(){
+ if(!sb||!cloudUser)return;
+ const {error}=await sb.from("tracker_state").upsert({user_id:cloudUser.id,state,updated_at:new Date().toISOString()},{onConflict:"user_id"});
+ if(error)return alert("Cloud sync failed: "+error.message);
+ setCloudStatus("Synced just now");
+}
+function setCloudStatus(t){const st=document.getElementById("authStatus");if(cloudUser)st.textContent=t}
+document.getElementById("signup").onclick=signUp;
+document.getElementById("login").onclick=login;
+document.getElementById("logout").onclick=logout;
+document.getElementById("sync").onclick=pushCloud;
+
+if(sb){
+ sb.auth.getSession().then(async ({data})=>{cloudUser=data.session?.user||null;updateAuthUI();if(cloudUser)await pullOrPush()});
+ sb.auth.onAuthStateChange((_event,session)=>{cloudUser=session?.user||null;updateAuthUI()});
+}else updateAuthUI();
+
+render();
+</script>
+</body>
+</html>
