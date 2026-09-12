@@ -1,0 +1,1209 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#f6f7fb">
+<link rel="manifest" href="manifest.json">
+<link rel="apple-touch-icon" href="icons/icon-180.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="CA AIR Tracker">
+<title>CA Foundation — AIR Tracker</title>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<style>
+:root{
+  --bg:#f5f6fa;
+  --card:#ffffff; --line:#eef0f5; --line-soft:#eef0f5;
+  --text:#171923; --muted:#8a8fa3; --faint:#c7cbd6;
+  --brand:#22c55e; --brand-soft:#e8faf0; --brand-dark:#16a34a;
+  --law:#0d9488; --law-soft:#e6f6f4;
+  --eco:#d97706; --eco-soft:#fdf1e0;
+  --acc:#2563eb; --acc-soft:#e8f0fe;
+  --qa:#9333ea; --qa-soft:#f4e9fd;
+  --good:#22c55e; --warn:#f59e0b; --bad:#ef4444;
+  --flame1:#ff8a3d; --flame2:#ff4d4d;
+  --r-lg:20px; --r-md:14px; --r-sm:10px;
+  --shadow:0 1px 2px rgba(23,25,35,.04),0 6px 18px rgba(23,25,35,.05);
+}
+*{box-sizing:border-box}
+html{scroll-behavior:smooth}
+body{margin:0;background:var(--bg);color:var(--text);font-family:Inter,system-ui,-apple-system,"Segoe UI",sans-serif;-webkit-font-smoothing:antialiased}
+:focus-visible{outline:2px solid var(--acc);outline-offset:2px;border-radius:6px}
+button{font-family:inherit;cursor:pointer}
+h1,h2,h3{margin:0}
+p{margin:0}
+a{color:inherit}
+
+/* ---------- shell ---------- */
+.shell{display:flex;min-height:100vh}
+.sidebar{width:250px;flex:0 0 250px;background:var(--card);border-right:1px solid var(--line);
+  padding:22px 16px;position:sticky;top:0;height:100vh;overflow-y:auto}
+.brand{display:flex;align-items:center;gap:10px;padding:0 6px 20px}
+.logo{width:36px;height:36px;border-radius:11px;display:grid;place-items:center;
+  background:linear-gradient(145deg,var(--brand),var(--brand-dark));color:#fff;font-weight:800;font-size:13px;flex:0 0 auto}
+.brand b{display:block;font-size:14.5px;font-weight:700}
+.brand small{color:var(--muted);font-size:10.5px}
+.navlabel{font-size:10.5px;font-weight:700;letter-spacing:.06em;color:var(--faint);padding:14px 10px 8px;text-transform:uppercase}
+.navlabel:first-of-type{padding-top:2px}
+.navbtn{display:flex;align-items:center;gap:10px;width:100%;text-align:left;background:none;border:none;
+  color:#5b6072;font-weight:600;font-size:13px;padding:9px 10px;border-radius:10px;margin-bottom:2px;transition:.15s}
+.navbtn:hover{background:#f4f5f9}
+.navbtn.active{background:var(--brand-soft);color:var(--brand-dark)}
+.navbtn .ic{font-size:15px;width:18px;text-align:center}
+
+.main{flex:1;min-width:0}
+.topbar{position:sticky;top:0;z-index:20;background:#f5f6faee;backdrop-filter:blur(10px);
+  display:flex;align-items:center;justify-content:space-between;padding:18px 26px;border-bottom:1px solid var(--line-soft)}
+.topbar h2{font-size:17px;font-weight:700}
+.topright{display:flex;align-items:center;gap:10px}
+.who{display:flex;align-items:center;gap:8px;border:1px solid var(--line);background:#fff;border-radius:11px;padding:5px 10px 5px 5px}
+.avatar{width:28px;height:28px;border-radius:9px;background:linear-gradient(145deg,var(--qa),var(--acc));color:#fff;
+  display:grid;place-items:center;font-size:11px;font-weight:800}
+.who b{font-size:12px;font-weight:700}
+.who span{display:block;font-size:9.5px;color:var(--muted)}
+
+.content{padding:18px 26px 100px}
+.tabs{display:none}
+.bottomnav{display:none}
+
+/* ---------- generic card ---------- */
+.card{background:var(--card);border:1px solid var(--line);border-radius:var(--r-lg);box-shadow:var(--shadow)}
+.section{padding:18px 20px}
+.head{display:flex;justify-content:space-between;align-items:baseline;gap:8px;margin-bottom:13px;flex-wrap:wrap}
+.head h3{font-size:14.5px;font-weight:700}
+.head span{font-size:11px;color:var(--muted)}
+
+/* ---------- pass / rank gauge row ---------- */
+.statrow{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:14px}
+.hero-gauge{padding:20px 22px;display:flex;flex-direction:column;align-items:center;text-align:center}
+.hero-gauge h3{font-size:14.5px;font-weight:700;align-self:flex-start}
+.hero-gauge span.sub{align-self:flex-start;font-size:11px;color:var(--muted);margin-top:1px}
+.arcwrap{position:relative;width:190px;height:148px;margin-top:4px}
+.arcnum{position:absolute;left:0;right:0;bottom:30px;text-align:center;font-size:34px;font-weight:800}
+.arctag{position:absolute;left:0;right:0;bottom:8px;text-align:center;font-size:9.5px;font-weight:800;
+  letter-spacing:.06em;color:var(--muted)}
+.slogan{margin-top:8px;font-size:12px;font-weight:750;line-height:1.45;padding:10px 13px;border-radius:12px;width:100%; transition: opacity 0.22s ease;}
+.slogan.great{background:#eafbf1;color:#15803d}
+.slogan.ok{background:#eaf1ff;color:#1d4ed8}
+.slogan.risk{background:#fff6e6;color:#b45309}
+.slogan.fail{background:#fdecec;color:#b91c1c}
+
+/* ---------- today performance card ---------- */
+.todaycard{margin-bottom:14px}
+.trackbar{height:13px;background:#eef0f5;border-radius:99px;overflow:hidden;margin:11px 0 10px}
+.trackbar i{display:block;height:100%;border-radius:99px;transition:width .5s cubic-bezier(.2,.8,.3,1)}
+.ticker-line{font-size:13px;font-weight:800;min-height:18px; transition:opacity .22s ease}
+.ticker-line.fire{color:#15803d}
+.ticker-line.good{color:#1d4ed8}
+.ticker-line.meh{color:#b45309}
+.ticker-line.bad{color:#b91c1c}
+
+/* ---------- mini stat lists ---------- */
+.statlistrow{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:14px}
+.statlist{display:flex;flex-direction:column;gap:0}
+.statlist .row{display:flex;align-items:center;gap:11px;padding:11px 2px}
+.statlist .row + .row{border-top:1px solid var(--line-soft)}
+.chip{width:38px;height:38px;border-radius:11px;display:grid;place-items:center;font-size:16px;flex:0 0 auto}
+.rowtext{flex:1;min-width:0}
+.rowtext b{display:block;font-size:12.5px;font-weight:700}
+.rowtext span{display:block;font-size:10px;color:var(--muted);margin-top:1px}
+.ring{position:relative;flex:0 0 auto}
+.ring svg{transform:rotate(-90deg)}
+.ring circle{fill:none;stroke-linecap:round}
+.ringnum{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-size:10.5px;font-weight:800}
+
+/* ---------- two column grid ---------- */
+.grid2{display:grid;grid-template-columns:1.5fr 1fr;gap:14px;align-items:start}
+.stack{display:flex;flex-direction:column;gap:14px}
+
+/* ---------- timetable list ---------- */
+.tlist{display:flex;flex-direction:column;gap:9px}
+.trow{display:grid;grid-template-columns:40px 1fr auto auto;gap:12px;align-items:center;
+  padding:10px;border:1px solid var(--line-soft);border-radius:13px;transition:.15s}
+.trow.done{opacity:.55}
+.tavatar{width:40px;height:40px;border-radius:11px;display:grid;place-items:center;font-size:16px;color:#fff;font-weight:700}
+.tname{font-size:12.5px;font-weight:700}
+.tname.strike{text-decoration:line-through}
+.ttag{display:inline-block;margin-top:3px;font-size:9.5px;font-weight:750;padding:2px 8px;border-radius:99px}
+.ttime{font-size:10.5px;color:var(--muted);font-weight:650;white-space:nowrap;text-align:right}
+.tbtn{border:none;border-radius:9px;padding:7px 13px;font-size:11px;font-weight:750;white-space:nowrap;color:#fff}
+.tbtn.mark{background:var(--brand)}
+.tbtn.done{background:#eef0f5;color:var(--muted)}
+
+/* ---------- subjects table ---------- */
+.subtable{display:flex;flex-direction:column;gap:8px}
+.srow{display:grid;grid-template-columns:44px 1.4fr 1fr auto auto 18px;gap:12px;align-items:center;
+  padding:11px 10px;border-radius:13px;border:1px solid var(--line-soft);cursor:pointer;transition:.15s}
+.srow:hover{border-color:#dfe2ea;background:#fafbfd}
+.savatar{width:34px;height:34px;border-radius:10px;display:grid;place-items:center;color:#fff;font-weight:800;font-size:12px}
+.sname{font-size:12.5px;font-weight:700}
+.smeta{font-size:9.5px;color:var(--muted);margin-top:2px}
+.sprog{height:8px;background:#eef0f5;border-radius:99px;overflow:hidden;min-width:70px}
+.sprog i{display:block;height:100%;border-radius:99px}
+.sscore{font-size:12px;font-weight:750;text-align:right}
+.pill{font-size:9.5px;font-weight:800;padding:4px 10px;border-radius:99px;white-space:nowrap}
+.pill.prog{background:#fff4e0;color:#b45309}
+.pill.done{background:var(--brand-soft);color:#15803d}
+.chev{color:var(--faint);font-size:13px;text-align:right}
+
+/* ---------- streak card ---------- */
+.streakcard{padding:20px 20px 18px}
+.streaktop{display:flex;align-items:flex-end;justify-content:space-between;margin-bottom:14px}
+.streakflame{font-size:38px;line-height:1;filter:drop-shadow(0 4px 10px rgba(255,120,50,.35))}
+.streaknum{font-size:34px;font-weight:800;line-height:1}
+.streaknum small{font-size:11.5px;font-weight:700;color:var(--muted);margin-left:3px}
+.streakrec{font-size:10.5px;color:var(--muted);font-weight:700;text-align:right}
+.streakrec b{color:#b45309}
+.flamerow{display:flex;justify-content:space-between;gap:6px;margin-top:6px}
+.flame{flex:1;display:flex;flex-direction:column;align-items:center;gap:6px;padding:9px 2px;border-radius:12px;
+  border:1px solid var(--line-soft);background:#fafbfd}
+.flame .fi{font-size:19px;line-height:1;opacity:.28;filter:grayscale(1); display:inline-block; transform-origin:bottom center; transition:opacity 0.3s;}
+.flame.on{background:linear-gradient(180deg,#fff4ea,#fff);border-color:#ffe0c2}
+.flame.on .fi{opacity:1;filter:none;animation:flick 1.6s ease-in-out infinite}
+.flame.today.pending .fi{opacity:.5;animation:pulse 1.4s ease-in-out infinite}
+.flame span:last-child{font-size:8.5px;color:var(--muted);font-weight:800;text-transform:uppercase}
+.flame:nth-child(2) .fi{animation-delay:.1s}
+.flame:nth-child(3) .fi{animation-delay:.25s}
+.flame:nth-child(4) .fi{animation-delay:.05s}
+.flame:nth-child(5) .fi{animation-delay:.3s}
+.flame:nth-child(6) .fi{animation-delay:.15s}
+.flame:nth-child(7) .fi{animation-delay:.22s}
+@keyframes flick{
+  0%,100%{transform:rotate(-3deg) scale(1)}
+  30%{transform:rotate(3deg) scale(1.1)}
+  60%{transform:rotate(-3deg) scale(0.95)}
+}
+@keyframes pulse{0%,100%{opacity:.35;transform:scale(1)}50%{opacity:.7;transform:scale(1.12)}}
+.streakhint{margin-top:12px;font-size:10.5px;color:var(--muted);line-height:1.5}
+.streakhint b{color:var(--text)}
+
+/* ---------- quick log card ---------- */
+.loglabel{font-size:10px;color:var(--muted);font-weight:700;margin-bottom:5px;display:block}
+.logfield{margin-bottom:10px}
+.logfield input{width:100%;border:1px solid var(--line);background:#fafbfd;color:var(--text);
+  padding:9px 10px;border-radius:10px;outline:none;font-size:12px}
+.logfield input:focus{border-color:var(--acc);background:#fff}
+.logstatus{margin-top:10px;padding:10px 12px;border-radius:11px;font-size:11px;font-weight:700}
+.logstatus.green{background:var(--brand-soft);color:#15803d}
+.logstatus.yellow{background:var(--eco-soft);color:#b45309}
+.logstatus.red{background:#fdecec;color:#991b1b}
+.btnrow{display:flex;gap:8px;margin-top:2px}
+.btn{border:1px solid var(--line);background:#fff;color:var(--text);border-radius:10px;padding:9px 13px;font-size:11.5px;font-weight:750}
+.btn.primary{background:var(--text);color:#fff;border-color:var(--text)}
+.btn.primary:hover{opacity:.88}
+.btn.ghost{color:#b91c1c;border-color:#f3d0d0}
+
+/* ---------- practice preview card ---------- */
+.pquiz{display:flex;align-items:center;gap:11px;padding:11px 0}
+.pquiz+.pquiz{border-top:1px solid var(--line-soft)}
+.pqicon{width:36px;height:36px;border-radius:10px;display:grid;place-items:center;font-size:15px}
+.pqtext b{display:block;font-size:12px;font-weight:700}
+.pqtext span{font-size:9.5px;color:var(--muted)}
+.pqbtn{margin-left:auto;border:1px solid var(--line);background:#fff;border-radius:9px;padding:6px 12px;font-size:10.5px;font-weight:750}
+.seeall{border:1px solid var(--line);background:#fff;border-radius:9px;padding:5px 11px;font-size:10.5px;font-weight:750}
+
+/* ---------- subject detail page ---------- */
+.subjecthero{padding:22px;display:flex;justify-content:space-between;gap:16px;align-items:center;flex-wrap:wrap}
+.subjecthero h2{font-size:22px;margin:4px 0;font-weight:800}
+.subjecthero p{font-size:11.5px;color:var(--muted)}
+.subbadge{width:52px;height:52px;border-radius:16px;display:grid;place-items:center;font-size:22px;color:#fff}
+.phases{display:flex;gap:5px;width:220px}
+.phases i{height:7px;flex:1;background:#eef0f5;border-radius:99px}
+.chapters{display:grid;gap:8px}
+.chapter{display:grid;grid-template-columns:20px 1fr auto;gap:10px;align-items:center;padding:12px;
+  border:1px solid var(--line-soft);border-radius:12px;background:#fff}
+.chapter input{width:17px;height:17px}
+.chapter.done{background:#fafbfd}
+.chapter.done .cname{text-decoration:line-through;color:#a6abbb}
+.cname{font-size:12px;font-weight:650}
+.weight{font-size:9.5px;color:var(--muted);text-align:right}
+
+/* ---------- drawer ---------- */
+.menu-overlay{position:fixed;inset:0;background:#00000040;opacity:0;pointer-events:none;transition:.2s;z-index:49}
+.menu-overlay.open{opacity:1;pointer-events:auto}
+.side-menu{position:fixed;top:0;right:0;bottom:0;width:360px;max-width:90vw;background:#fff;
+  border-left:1px solid var(--line);transform:translateX(100%);transition:.28s cubic-bezier(.2,.8,.3,1);
+  z-index:50;overflow-y:auto;padding:20px;box-shadow:-10px 0 30px rgba(0,0,0,.08)}
+.side-menu.open{transform:translateX(0)}
+.side-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:18px}
+.side-head b{font-size:15px;font-weight:800}
+.side-head button{background:#f4f5f9;border:none;color:#5b6072;font-size:14px;padding:6px 9px;border-radius:9px}
+.side-label{font-size:10.5px;color:var(--muted);margin:20px 0 10px;font-weight:800;letter-spacing:.05em;text-transform:uppercase}
+.side-label:first-of-type{margin-top:0}
+.auth-stack{display:flex;flex-direction:column;gap:8px}
+.auth-stack input{width:100%;border:1px solid var(--line);background:#fafbfd;color:var(--text);
+  padding:10px;border-radius:10px;font-size:12.5px;outline:none}
+.side-actions{display:flex;gap:6px;flex-wrap:wrap}
+.side-actions .btn{flex:1;min-width:70px;text-align:center}
+.cloudrow{display:flex;align-items:center;gap:7px;margin-top:6px;font-size:11px;color:var(--muted)}
+.cloud-dot{width:7px;height:7px;border-radius:50%;background:var(--faint)}
+.cloud-dot.on{background:var(--good)}
+.cloud-dot.warn{background:var(--warn)}
+.practice-grid{display:flex;flex-direction:column;gap:12px}
+.prac{padding:13px 14px;border-radius:14px;border:1px solid var(--line-soft);background:#fafbfd}
+.prac .ptop{display:flex;justify-content:space-between;align-items:center;margin-bottom:9px}
+.prac .ptop b{font-size:12.5px;font-weight:750}
+.prac .ppct{font-size:11px;font-weight:800}
+.prow{display:flex;align-items:center;justify-content:space-between;gap:8px;padding:7px 0;border-top:1px solid var(--line-soft)}
+.prow:first-of-type{border-top:none}
+.plabel{font-size:11px;color:#454a5c;font-weight:650}
+.ptarget{font-size:9.5px;color:var(--muted)}
+.stepper{display:flex;align-items:center;gap:8px}
+.stepper button{width:24px;height:24px;border-radius:8px;border:1px solid var(--line);background:#fff;color:var(--text);font-size:14px;font-weight:800;line-height:1}
+.stepper button:active{transform:scale(.92)}
+.stepper span{min-width:16px;text-align:center;font-size:12.5px;font-weight:750;font-variant-numeric:tabular-nums}
+
+footer{text-align:center;color:var(--faint);font-size:9.5px;margin-top:24px}
+
+@media(max-width:1080px){
+  .statrow,.statlistrow{grid-template-columns:1fr;}
+  .grid2{grid-template-columns:1fr}
+}
+@media(max-width:900px){
+  .sidebar{display:none}
+  .content{padding:14px 14px 92px}
+  .topbar{padding:14px 16px}
+  .bottomnav{display:flex;position:fixed;left:0;right:0;bottom:0;z-index:40;justify-content:space-around;
+    padding:8px 6px calc(8px + env(safe-area-inset-bottom));background:#ffffffee;backdrop-filter:blur(16px);
+    border-top:1px solid var(--line)}
+  .bottomnav button{display:flex;flex-direction:column;align-items:center;gap:3px;background:none;border:none;
+    color:var(--muted);font-size:9.5px;font-weight:700;padding:4px 8px;border-radius:9px}
+  .bottomnav button .ic{font-size:16px;line-height:1}
+  .bottomnav button.active{color:var(--brand-dark)}
+  .srow{grid-template-columns:38px 1fr auto 16px}
+  .sprog,.sscore{display:none}
+  .arcwrap{width:160px;height:126px}
+  .who span{display:none}
+}
+@media(prefers-reduced-motion:reduce){.flame.on .fi,.flame.today.pending .fi{animation:none}}
+</style>
+</head>
+<body>
+<div class="shell">
+  <aside class="sidebar" id="sidebar">
+    <div class="brand"><div class="logo">CA</div><div><b>AIR Tracker</b><small>Foundation · Sep–Oct</small></div></div>
+    <div class="navlabel">Main</div>
+    <div id="navmain"></div>
+    <div class="navlabel">Subjects</div>
+    <div id="navsubjects"></div>
+    <div class="navlabel">Other</div>
+    <button class="navbtn" id="openMenuSide"><span class="ic">⚙️</span>Account &amp; sync</button>
+  </aside>
+
+  <div class="main">
+    <header class="topbar">
+      <h2 id="pageTitle">Home page</h2>
+      <div class="topright">
+        <button class="who" id="openMenuTop"><div class="avatar" id="avatarInit">••</div><div><b id="whoName">Local</b><span id="whoSub">tap to sync</span></div></button>
+      </div>
+    </header>
+    <main class="content" id="app"></main>
+  </div>
+</div>
+<div class="bottomnav" id="bottomnav"></div>
+
+<div class="menu-overlay" id="menuOverlay"></div>
+<aside class="side-menu" id="sideMenu">
+  <div class="side-head"><b>Account &amp; practice</b><button id="closeMenu">✕</button></div>
+
+  <div class="side-label">Account</div>
+  <div class="auth-stack">
+    <input id="email" type="email" placeholder="Email" autocomplete="username">
+    <input id="password" type="password" placeholder="Password" autocomplete="current-password">
+    <div class="side-actions">
+      <button class="btn" id="signup">Sign up</button>
+      <button class="btn" id="login">Log in</button>
+      <button class="btn" id="logout" style="display:none">Log out</button>
+      <button class="btn primary" id="sync" style="display:none">Sync cloud</button>
+      <button class="btn" id="installApp" style="display:none">Install app</button>
+    </div>
+    <div class="cloudrow"><i class="cloud-dot" id="cloudDot"></i><span id="authStatus">Local only</span></div>
+  </div>
+
+  <div class="side-label">Exam practice tracker</div>
+  <div id="drawerPractice"></div>
+</aside>
+
+<script>
+/* ============================================================
+   SUPABASE CONFIG
+   ============================================================ */
+const SUPABASE_URL = "https://tcfjkovzljrliiyjotxr.supabase.co";
+const SUPABASE_ANON_KEY = "sb_publishable_bDFR6myjVcd90C_mJ-tPUg_1ElSkrcJ";
+const SUPABASE_READY =
+  SUPABASE_URL.startsWith("https://") &&
+  !SUPABASE_URL.includes("PASTE_") &&
+  !SUPABASE_ANON_KEY.includes("PASTE_");
+
+const sb = SUPABASE_READY ? window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY) : null;
+
+/* ---------------- subject + syllabus data ---------------- */
+const S={
+law:{name:"Business Law",short:"LAW",icon:"⚖️",c:"var(--law)",soft:"var(--law-soft)",ch:[["Indian Regulatory Framework","5–8"],["Indian Contract Act, 1872","35–40"],["Sale of Goods Act, 1930","15–20"],["Indian Partnership Act, 1932","15–20"],["Companies Act, 2013","10–15"],["Negotiable Instruments Act, 1881","8–12"],["LLP Act, 2008","3–5"]]},
+eco:{name:"Business Economics",short:"ECO",icon:"📈",c:"var(--eco)",soft:"var(--eco-soft)",ch:[["Introduction to Business Economics","4–6%"],["Theory of Demand and Supply","15–20%"],["Theory of Production and Cost","10–15%"],["Price Determination in Different Markets","12–15%"],["Business Cycles","5–8%"],["Determination of National Income","10–15%"],["Public Finance","8–12%"],["Money Market","10–12%"],["International Trade","10–12%"],["Indian Economy","5–8%"]]},
+accounts:{name:"Accounting",short:"ACC",icon:"📊",c:"var(--acc)",soft:"var(--acc-soft)",ch:[["Theoretical Framework","8–12"],["Accounting Process","12–18"],["Bank Reconciliation Statement","4–8"],["Inventories","4–8"],["Depreciation & Amortisation","6–10"],["Bills of Exchange & Promissory Notes","6–10"],["Final Accounts of Sole Proprietors","12–20"],["Not-for-Profit Organisations","8–12"],["Accounts from Incomplete Records","8–12"],["Partnership & LLP Accounts","18–24"],["Company Accounts","12–18"]]},
+qa:{name:"Quantitative Aptitude",short:"QA",icon:"🧮",c:"var(--qa)",soft:"var(--qa-soft)",ch:[["Ratio, Proportion, Indices & Logarithms","Maths · 40"],["Equations","Maths · 40"],["Linear Inequalities","Maths · 40"],["Mathematics of Finance","Maths · 40"],["Permutations & Combinations","Maths · 40"],["Sequence & Series (AP & GP)","Maths · 40"],["Sets, Relations & Functions, Limits & Continuity","Maths · 40"],["Applications of Differential & Integral Calculus","Maths · 40"],["Number Series, Coding-Decoding & Odd Man Out","LR · 20"],["Direction Tests","LR · 20"],["Seating Arrangements","LR · 20"],["Blood Relations","LR · 20"],["Statistical Description of Data & Sampling","Statistics · 40"],["Measures of Central Tendency & Dispersion","Statistics · 40"],["Probability","Statistics · 40"],["Theoretical Distributions","Statistics · 40"],["Correlation & Regression","Statistics · 40"],["Index Numbers","Statistics · 40"]]}
+};
+const T=[["06:10","07:30","law"],["09:45","10:30","eco"],["10:32","11:29","eco"],["12:01","13:29","qa"],["14:35","16:30","accounts"],["16:35","17:15","eco"],["18:31","20:00","accounts"],["20:32","21:30","law"],["21:32","22:00","qa"],["22:02","22:29","law"]];
+const START="2026-09-11",END="2026-10-30",EXAM="2027-01-15";
+const PRACTICE_TARGET={pyq:4,mtp:2,rtp:2};
+const STREAK_HOURS_TARGET=6;
+let tab="home";
+
+/* ---------------- state + migration ---------------- */
+function normalizeState(v){
+  const base=blank();
+  if(!v || typeof v!=="object")return base;
+  const out={subjects:base.subjects,logs:(v.logs&&typeof v.logs==="object")?v.logs:{},streakRecord:Number(v.streakRecord)||0,meta:{updatedAt:Number(v.meta?.updatedAt)||0}};
+
+  Object.keys(S).forEach(k=>{
+    const incoming=v.subjects?.[k];
+    if(!incoming)return;
+    const n=S[k].ch.length;
+    out.subjects[k]={
+      p:[
+        Array.isArray(incoming.p?.[0])?incoming.p[0].slice(0,n).concat(Array(Math.max(0,n-(incoming.p[0]?.length||0))).fill(false)):Array(n).fill(false),
+        Array.isArray(incoming.p?.[1])?incoming.p[1].slice(0,n).concat(Array(Math.max(0,n-(incoming.p[1]?.length||0))).fill(false)):Array(n).fill(false),
+        Array.isArray(incoming.p?.[2])?incoming.p[2].slice(0,n).concat(Array(Math.max(0,n-(incoming.p[2]?.length||0))).fill(false)):Array(n).fill(false)
+      ],
+      phase:clamp(Number(incoming.phase)||0,0,2),
+      practice:{
+        pyq:clamp(Number(incoming.practice?.pyq)||0,0,20),
+        mtp:clamp(Number(incoming.practice?.mtp)||0,0,20),
+        rtp:clamp(Number(incoming.practice?.rtp)||0,0,20)
+      }
+    };
+  });
+  return out;
+}
+const blank=()=>{let x={};Object.keys(S).forEach(k=>{x[k]={p:[Array(S[k].ch.length).fill(false),Array(S[k].ch.length).fill(false),Array(S[k].ch.length).fill(false)],phase:0,practice:{pyq:0,mtp:0,rtp:0}}});return{subjects:x,logs:{},streakRecord:0}};
+
+function loadState(){
+  let v3=null,v2=null;
+  try{v3=JSON.parse(localStorage.getItem("ca_air_v3")||"null")}catch(e){}
+  try{v2=JSON.parse(localStorage.getItem("ca_air_v2")||"null")}catch(e){}
+  return normalizeState(v3||v2||blank());
+}
+let state=loadState();
+if(!state.meta)state.meta={updatedAt:0};
+localStorage.setItem("ca_air_v3",JSON.stringify(state));
+let cloudUser=null;
+let syncTimer=null;
+let realtimeChannel=null;
+let realtimePollTimer=null;
+let cloudWriteInFlight=false;
+let cloudWriteQueued=false;
+let lastCloudStateJson="";
+
+const autoSync = () => {
+  if(!sb || !cloudUser)return;
+  clearTimeout(syncTimer);
+  setCloudStatus("Syncing...");
+  // Small debounce prevents a burst of clicks from creating many writes,
+  // while still feeling instant to the user.
+  syncTimer=setTimeout(()=>pushCloud(),250);
+};
+
+const save=()=>{
+  try{
+    if(!state.meta)state.meta={};
+    state.meta.updatedAt=Date.now();
+    localStorage.setItem("ca_air_v3",JSON.stringify(state));
+  }catch(err){
+    console.error("Local save failed:",err);
+    alert("Your browser blocked local storage. Please allow site storage for this tracker.");
+    return;
+  }
+  autoSync();
+};
+const today=()=>new Intl.DateTimeFormat("en-CA",{timeZone:"Asia/Kolkata"}).format(new Date());
+const diff=(a,b)=>Math.floor((new Date(b)-new Date(a))/86400000);
+
+// Robust Data Initializer for Daily Logs
+const D = () => {
+  if(!state.logs || typeof state.logs!=="object")state.logs={};
+  const key=today();
+  let d=state.logs[key];
+  if(!d || typeof d!=="object"){
+    d={slots:{},hours:"",chapters:"",win:"",problem:""};
+    state.logs[key]=d;
+  }
+  if(!d.slots || typeof d.slots!=="object")d.slots={};
+  if(d.hours==null)d.hours="";
+  if(d.chapters==null)d.chapters="";
+  if(d.win==null)d.win="";
+  if(d.problem==null)d.problem="";
+  return d;
+};
+
+function pct(k){let s=state.subjects[k],n=S[k].ch.length,done=s.p[s.phase].filter(Boolean).length;return Math.round(((s.phase*n)+done)/(n*3)*100)}
+function adv(k){let s=state.subjects[k];if(s.phase<2&&s.p[s.phase].every(Boolean))s.phase++}
+function fmt(t){let [h,m]=t.split(":").map(Number),a=h>=12?"PM":"AM";h=h%12||12;return h+":"+String(m).padStart(2,"0")+" "+a}
+function date(x){return new Date(x+"T00:00:00").toLocaleDateString("en-IN",{day:"numeric",month:"short",year:"numeric"})}
+function clamp(v,a,b){return Math.max(a,Math.min(b,v))}
+function rand(arr){return arr[Math.floor(Math.random()*arr.length)]}
+
+/* ---------------- pass % (revision-driven) & rank % (revision + practice) ---------------- */
+function passPct(){return Math.round(Object.keys(S).reduce((a,k)=>a+pct(k),0)/Object.keys(S).length)}
+function practicePctSub(k){
+  let p=state.subjects[k].practice||{pyq:0,mtp:0,rtp:0},t=PRACTICE_TARGET;
+  let a=Math.min(p.pyq,t.pyq)/t.pyq, b=Math.min(p.mtp,t.mtp)/t.mtp, c=Math.min(p.rtp,t.rtp)/t.rtp;
+  return Math.round(((a+b+c)/3)*100);
+}
+function practiceOverallPct(){return Math.round(Object.keys(S).reduce((a,k)=>a+practicePctSub(k),0)/Object.keys(S).length)}
+function rankPct(){return Math.round((passPct()+practiceOverallPct())/2)}
+function completedChaptersCount(){return Object.keys(S).reduce((a,k)=>{let s=state.subjects[k],n=S[k].ch.length,done=s.p[s.phase].filter(Boolean).length;return a+s.phase*n+done},0)}
+function totalChapterSlots(){return Object.keys(S).reduce((a,k)=>a+S[k].ch.length*3,0)}
+
+/* ---------------- study streak (6+ real hours from ticked sessions) ---------------- */
+function slotMinutes(i){
+  let [sh,sm]=T[i][0].split(":").map(Number);
+  let [eh,em]=T[i][1].split(":").map(Number);
+  return (eh*60+em)-(sh*60+sm);
+}
+function dayHours(dateKey){
+  let d=state.logs[dateKey];
+  if(!d||!d.slots)return 0;
+  let mins=0;
+  T.forEach((t,i)=>{ if(d.slots["t"+i]) mins+=slotMinutes(i); });
+  return mins/60;
+}
+function isStreakDay(dateKey){ return dayHours(dateKey)>=STREAK_HOURS_TARGET; }
+function currentStreak(){
+  let cursor=new Date();
+  let todayKey=cursor.toISOString().slice(0,10);
+  if(!isStreakDay(todayKey)) cursor.setDate(cursor.getDate()-1);
+  let count=0;
+  while(true){
+    let k=cursor.toISOString().slice(0,10);
+    if(isStreakDay(k)){ count++; cursor.setDate(cursor.getDate()-1); }
+    else break;
+  }
+  return count;
+}
+function totalHoursLogged(){return Object.keys(state.logs).reduce((a,k)=>a+dayHours(k),0)}
+function weeklySessionsPct(){
+  let done=0;
+  for(let i=6;i>=0;i--){let q=new Date();q.setDate(q.getDate()-i);let k=q.toISOString().slice(0,10);let d=state.logs[k];if(d)done+=Object.values(d.slots||{}).filter(Boolean).length}
+  return Math.round(done/70*100);
+}
+
+/* ---------------- fear/positive slogans: pass chance + AIR/rank chance ---------------- */
+function bucketFor(val,thresholds){for(let [min,key] of thresholds){if(val>=min)return key} return thresholds[thresholds.length-1][1]}
+const PASS_THRESH=[[80,"great"],[60,"ok"],[40,"risk"],[0,"fail"]];
+const RANK_THRESH=[[75,"great"],[55,"ok"],[35,"risk"],[0,"fail"]];
+const BUCKET_COLOR={great:"var(--brand)",ok:"var(--acc)",risk:"var(--warn)",fail:"var(--bad)"};
+const BUCKET_TAG={great:"ON TRACK",ok:"NARROW MARGIN",risk:"AT RISK",fail:"OFF TRACK"};
+const PASS_MSG={
+  great:["You're firmly on track to clear this exam — protect this streak.","This pace passes. Don't get comfortable, but this pace passes.","Solid coverage — passing is no longer the worry, rank is."],
+  ok:["Passing looks likely, but there's no cushion here if you slow down.","You'd probably scrape a pass today. 'Probably' isn't good enough.","This is a pass on a good day — most days need to be good days."],
+  risk:["Borderline. One more slow week and this turns into a fail.","This is not a passing trajectory yet — the syllabus doesn't wait.","You're closer to failing this attempt than clearing it right now."],
+  fail:["At this rate, you do not clear this exam. That's the honest read.","This pace fails. Not passes — fails.","Nothing about this pace suggests a pass in January."]
+};
+const RANK_MSG={
+  great:["AIR is realistic if this pace holds — this is what rank-holders' weeks look like.","Merit rank is genuinely in reach right now — don't ease off.","This is rank-track pace. Keep stacking days like this."],
+  ok:["You could land a merit rank, but you're not separating from the pack yet.","Decent, but decent doesn't get an AIR. Push the practice numbers up.","This gets you a rank, not a good one, unless practice catches up."],
+  risk:["Rank is slipping away — you're on a passing pace at best, not a ranking one.","AIR needs a different gear than the one you're in right now.","At this pace you finish the syllabus, not the podium."],
+  fail:["Forget AIR — this pace barely builds toward passing, let alone ranking.","No version of this pace produces a merit rank.","Rank isn't the conversation right now. Passing is, and even that's shaky."]
+};
+
+/* ---------------- today's performance ---------------- */
+function expectedSlotsByNow(){
+  let now=new Date(),nowMin=now.getHours()*60+now.getMinutes(),count=0;
+  T.forEach(t=>{let [eh,em]=t[1].split(":").map(Number);if(eh*60+em<=nowMin)count++});
+  return count;
+}
+function todayBucket(){
+  let done=Object.values(D().slots).filter(Boolean).length;
+  let expected=expectedSlotsByNow();
+  let paceRatio=expected>0?done/expected:(done>0?1:.6);
+  let score=(done/10)*.55+Math.min(paceRatio,1.3)*.45;
+  if(done>=4)score+=.15;
+  score=clamp(score,0,1.5);
+  if(score>=1)return"fire";
+  if(score>=.75)return"good";
+  if(score>=.45)return"meh";
+  return"bad";
+}
+const TODAY_MSG={
+  fire:["LES GOOO 🔥 today's a certified banger","Yeah going good baby 💪 keep stacking sessions","Loud af today — full send!!","This is what discipline looks like"],
+  good:["Solid pace today, keep going","On track — don't slow down now","Good session count so far today"],
+  meh:["Chilling? kinda a vibe check 👀","A bit behind for this hour, catch up","Half a day isn't a full day"],
+  bad:["Forget about rank, not even passing at this rate","Had enough fun? The clock's moving, you're not","Zero motion today — that's a problem"]
+};
+const TODAY_BAR_COLOR={fire:"var(--brand)",good:"var(--acc)",meh:"var(--warn)",bad:"var(--bad)"};
+
+function fadeSwap(el, text, baseCls, extraCls){
+  el.style.opacity = 0;
+  setTimeout(() => {
+     if(!el.isConnected) return;
+     el.textContent = text;
+     el.className = baseCls + " " + extraCls;
+     el.style.opacity = 1;
+  }, 220);
+}
+
+function updateTicker(){
+  // Today's Performance Rotation
+  let t = document.getElementById("todayTicker");
+  if(t){
+      let b = todayBucket();
+      fadeSwap(t, rand(TODAY_MSG[b]), "ticker-line", b);
+  }
+  
+  // Chance to Pass Slogan Rotation
+  let pt = document.getElementById("passTicker");
+  if(pt){
+      let pP = passPct(), pB = bucketFor(pP, PASS_THRESH);
+      fadeSwap(pt, rand(PASS_MSG[pB]), "slogan", pB);
+  }
+
+  // Rank Chance Slogan Rotation
+  let rt = document.getElementById("rankTicker");
+  if(rt){
+      let rP = rankPct(), rB = bucketFor(rP, RANK_THRESH);
+      fadeSwap(rt, rand(RANK_MSG[rB]), "slogan", rB);
+  }
+}
+let tickerTimer=setInterval(updateTicker, 4500); // 4.5 seconds to comfortably read longer text
+
+/* ---------------- small helpers for markup ---------------- */
+function ring(pctVal,color,size,stroke,centerLabel){
+  size=size||56;stroke=stroke||6;
+  let r=(size-stroke)/2,c=2*Math.PI*r,off=c-(clamp(pctVal,0,100)/100)*c;
+  return `<div class="ring" style="width:${size}px;height:${size}px">
+    <svg width="${size}" height="${size}" viewBox="0 0 ${size} ${size}">
+      <circle cx="${size/2}" cy="${size/2}" r="${r}" stroke="#eef0f5" stroke-width="${stroke}" fill="none"/>
+      <circle cx="${size/2}" cy="${size/2}" r="${r}" stroke="${color}" stroke-width="${stroke}" fill="none"
+        stroke-dasharray="${c}" stroke-dashoffset="${off}"/>
+    </svg>
+    <div class="ringnum" style="color:${color}">${centerLabel!=null?centerLabel:pctVal+"%"}</div>
+  </div>`;
+}
+function arcGauge(pctVal,color,tag){
+  const size=190,r=76,cx=92,cy=86,stroke=15;
+  const C=2*Math.PI*r, sweep=250, dashLen=C*(sweep/360), gapLen=C-dashLen;
+  const valLen=dashLen*(clamp(pctVal,0,100)/100);
+  return `<div class="arcwrap">
+    <svg width="${size}" height="148" viewBox="0 0 ${size} 148">
+      <circle cx="${cx}" cy="${cy}" r="${r}" fill="none" stroke="#eef0f5" stroke-width="${stroke}" stroke-linecap="round"
+        stroke-dasharray="${dashLen} ${gapLen}" transform="rotate(125 ${cx} ${cy})"/>
+      <circle cx="${cx}" cy="${cy}" r="${r}" fill="none" stroke="${color}" stroke-width="${stroke}" stroke-linecap="round"
+        stroke-dasharray="${valLen} ${C-valLen}" transform="rotate(125 ${cx} ${cy})"/>
+    </svg>
+    <div class="arcnum">${pctVal}%</div>
+    <div class="arctag">${tag}</div>
+  </div>`;
+}
+function slotStatusLabel(i,done){
+  if(done)return"Done";
+  let now=new Date(),nowMin=now.getHours()*60+now.getMinutes();
+  let [sh,sm]=T[i][0].split(":").map(Number),[eh,em]=T[i][1].split(":").map(Number);
+  let s=sh*60+sm,e=eh*60+em;
+  if(nowMin<s)return"Upcoming";
+  if(nowMin>=s&&nowMin<=e)return"Now";
+  return"Missed";
+}
+
+/* ---------------- nav / tabs ---------------- */
+function navs(){
+  const main=[["home","Home","🏠"]];
+  document.getElementById("navmain").innerHTML=main.map(x=>`<button class="navbtn ${tab==x[0]?"active":""}" data-tab="${x[0]}"><span class="ic">${x[2]}</span>${x[1]}</button>`).join("");
+  document.getElementById("navsubjects").innerHTML=Object.keys(S).map(k=>`<button class="navbtn ${tab==k?"active":""}" data-tab="${k}"><span class="ic">${S[k].icon}</span>${S[k].name}</button>`).join("");
+  const items=[["home","Home","🏠"],...Object.keys(S).map(k=>[k,S[k].short,S[k].icon])];
+  document.getElementById("bottomnav").innerHTML=items.map(x=>`<button class="${tab==x[0]?"active":""}" data-tab="${x[0]}"><span class="ic">${x[2]}</span>${x[1]}</button>`).join("");
+  document.querySelectorAll("[data-tab]").forEach(x=>x.addEventListener('click', ()=>{tab=x.dataset.tab;render();scrollTo(0,0)}));
+  document.getElementById("pageTitle").textContent=tab==="home"?"Home page":S[tab].name+" page";
+}
+
+/* ---------------- reusable blocks ---------------- */
+
+function countdownRow(){
+  let now = new Date();
+  let todayDate = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+  let sylDate = new Date(2026, 9, 30); // October 30, 2026
+  let examDate = new Date(2027, 0, 15); // January 15, 2027
+
+  let sylDays = Math.max(0, Math.ceil((sylDate - todayDate) / 86400000));
+  let examDays = Math.max(0, Math.ceil((examDate - todayDate) / 86400000));
+
+  return `<div class="statlistrow">
+    <div class="card section" style="display:flex; justify-content:space-between; align-items:center;">
+      <div>
+        <span style="font-size:10px; color:var(--muted); font-weight:800; text-transform:uppercase; letter-spacing:0.05em">Syllabus Completion</span>
+        <div style="font-size:13px; font-weight:700; margin-top:2px">30 Oct 2026</div>
+      </div>
+      <div style="text-align:right">
+        <div style="font-size:24px; font-weight:800; line-height:1; color:var(--brand);">${sylDays}</div>
+        <span style="font-size:10px; color:var(--muted); font-weight:700;">DAYS LEFT</span>
+      </div>
+    </div>
+    <div class="card section" style="display:flex; justify-content:space-between; align-items:center;">
+      <div>
+        <span style="font-size:10px; color:var(--muted); font-weight:800; text-transform:uppercase; letter-spacing:0.05em">CA Foundation Exam</span>
+        <div style="font-size:13px; font-weight:700; margin-top:2px">15 Jan 2027</div>
+      </div>
+      <div style="text-align:right">
+        <div style="font-size:24px; font-weight:800; line-height:1; color:var(--acc);">${examDays}</div>
+        <span style="font-size:10px; color:var(--muted); font-weight:700;">DAYS LEFT</span>
+      </div>
+    </div>
+  </div>`;
+}
+
+function passRankRow(){
+  let pP=passPct(), rP=rankPct();
+  let pB=bucketFor(pP,PASS_THRESH), rB=bucketFor(rP,RANK_THRESH);
+  return `<div class="statrow">
+    <div class="card hero-gauge">
+      <h3>Chance to pass</h3><span class="sub">Syllabus revision progress</span>
+      ${arcGauge(pP,BUCKET_COLOR[pB],BUCKET_TAG[pB])}
+      <div class="slogan ${pB}" id="passTicker">${rand(PASS_MSG[pB])}</div>
+    </div>
+    <div class="card hero-gauge">
+      <h3>Chance for AIR / merit rank</h3><span class="sub">Revision + practice combined</span>
+      ${arcGauge(rP,BUCKET_COLOR[rB],BUCKET_TAG[rB])}
+      <div class="slogan ${rB}" id="rankTicker">${rand(RANK_MSG[rB])}</div>
+    </div>
+  </div>`;
+}
+function todayCard(){
+  let d=D(), done=Object.values(d.slots).filter(Boolean).length, pct10=Math.round(done/10*100);
+  let b=todayBucket();
+  return `<section class="card section todaycard">
+    <div class="head"><h3>Today's performance</h3><span>${done}/10 sessions</span></div>
+    <div class="trackbar"><i style="width:${pct10}%;background:${TODAY_BAR_COLOR[b]}"></i></div>
+    <div class="ticker-line ${b}" id="todayTicker">${rand(TODAY_MSG[b])}</div>
+  </section>`;
+}
+function statsMiniRow(){
+  return `<div class="statlistrow">
+    <div class="card section">
+      <div class="head"><h3>This exam cycle</h3><span>50-day first coverage</span></div>
+      <div class="statlist">
+        <div class="row"><div class="chip" style="background:var(--brand-soft)">🎓</div>
+          <div class="rowtext"><b>Subjects in prep</b><span>Law · Eco · Accounts · Quant</span></div>
+          ${ring(100,"var(--brand)",48,6,Object.keys(S).length)}</div>
+        <div class="row"><div class="chip" style="background:var(--acc-soft)">🎯</div>
+          <div class="rowtext"><b>Chapters completed</b><span>${completedChaptersCount()}/${totalChapterSlots()} coverage slots</span></div>
+          ${ring(passPct(),"var(--acc)",48,6)}</div>
+        <div class="row"><div class="chip" style="background:var(--eco-soft)">⏳</div>
+          <div class="rowtext"><b>Hours logged</b><span>Across the whole plan</span></div>
+          ${ring(clamp(totalHoursLogged()/300*100,0,100),"var(--eco)",48,6,Math.round(totalHoursLogged())+"h")}</div>
+      </div>
+    </div>
+    <div class="card section">
+      <div class="head"><h3>This week</h3><span>Last 7 days</span></div>
+      <div class="statlist">
+        <div class="row"><div class="chip" style="background:var(--acc-soft)">📅</div>
+          <div class="rowtext"><b>Sessions this week</b><span>vs 70 possible</span></div>
+          ${ring(clamp(weeklySessionsPct(),0,100),"var(--acc)",48,6)}</div>
+        <div class="row"><div class="chip" style="background:var(--qa-soft)">🔍</div>
+          <div class="rowtext"><b>Practice logged</b><span>PYQ · MTP · RTP</span></div>
+          ${ring(practiceOverallPct(),"var(--qa)",48,6)}</div>
+        <div class="row"><div class="chip" style="background:#fff1e6">🔥</div>
+          <div class="rowtext"><b>Current streak</b><span>Record ${Math.max(state.streakRecord||0,currentStreak())}d</span></div>
+          ${ring(clamp(currentStreak()/7*100,0,100),"#f97316",48,6,currentStreak()+"d")}</div>
+      </div>
+    </div>
+  </div>`;
+}
+function timetableList(){
+  let d=D();
+  return `<div class="tlist">${T.map((x,i)=>{
+    let s=S[x[2]],done=!!d.slots["t"+i];
+    return `<div class="trow ${done?"done":""}">
+      <div class="tavatar" style="background:${s.c}">${s.icon}</div>
+      <div><div class="tname ${done?"strike":""}">${s.name}</div><span class="ttag" style="background:${s.soft};color:${s.c}">${s.short}</span></div>
+      <div class="ttime">${fmt(x[0])} – ${fmt(x[1])}</div>
+      <button class="tbtn ${done?"done":"mark"}" data-slot="${i}">${done?"✓ Done":"Mark done"}</button>
+    </div>`;
+  }).join("")}</div>`;
+}
+function subjectsTable(){
+  return `<div class="subtable">${Object.keys(S).map(k=>{
+    let s=state.subjects[k],n=S[k].ch.length,done=s.p[s.phase].filter(Boolean).length,p=pct(k),complete=p>=100;
+    return `<div class="srow" data-open="${k}">
+      <div class="savatar" style="background:${S[k].c}">${S[k].short.slice(0,2)}</div>
+      <div><div class="sname">${S[k].name}</div><div class="smeta">${n} chapters · ${["First coverage","1st revision","2nd revision"][s.phase]}</div></div>
+      <div class="sprog"><i style="width:${p}%;background:${S[k].c}"></i></div>
+      <div class="sscore">${p}%</div>
+      <div class="pill ${complete?"done":"prog"}">${complete?"Completed":"In progress"}</div>
+      <div class="chev">›</div>
+    </div>`;
+  }).join("")}</div>`;
+}
+function streakCard(){
+  let cur=currentStreak();
+  if(cur>(state.streakRecord||0)){ state.streakRecord=cur; save(); }
+  let rec=Math.max(state.streakRecord||0,cur);
+  let days=[];
+  for(let i=6;i>=0;i--){
+    let q=new Date(); q.setDate(q.getDate()-i);
+    let k=q.toISOString().slice(0,10);
+    let on=isStreakDay(k), isToday=k==today(), pending=isToday&&!on;
+    let label=q.toLocaleDateString("en-IN",{weekday:"short"}).slice(0,3);
+    days.push(`<div class="flame ${on?"on":""} ${isToday?"today":""} ${pending?"pending":""}" title="${dayHours(k).toFixed(1)}h logged"><span class="fi">${on?"🔥":"○"}</span><span>${label}</span></div>`);
+  }
+  return `<section class="card streakcard">
+    <div class="head"><h3>Study streak</h3><span>${STREAK_HOURS_TARGET}h+/day</span></div>
+    <div class="streaktop">
+      <div style="display:flex;align-items:center;gap:12px">
+        <div class="streakflame">🔥</div>
+        <div class="streaknum">${cur}<small>day${cur==1?"":"s"} in a row</small></div>
+      </div>
+      <div class="streakrec">Record<br><b>${rec} day${rec==1?"":"s"}</b></div>
+    </div>
+    <div class="flamerow">${days.join("")}</div>
+    <div class="streakhint">Counts a day when your <b>ticked sessions</b> add up to ${STREAK_HOURS_TARGET}+ real hours — not the manual log field.</div>
+  </section>`;
+}
+function practicePreview(){
+  let weakest=Object.keys(S).map(k=>[k,practicePctSub(k)]).sort((a,b)=>a[1]-b[1]).slice(0,2);
+  return `<section class="card section">
+    <div class="head"><h3>Practice to catch up</h3><button class="seeall" id="openPractice">See all</button></div>
+    ${weakest.map(([k,p])=>`<div class="pquiz">
+      <div class="pqicon" style="background:${S[k].soft};color:${S[k].c}">${S[k].icon}</div>
+      <div class="pqtext"><b>${S[k].name}</b><span>PYQ / MTP / RTP · ${p}% of target</span></div>
+      <button class="pqbtn" id="openPractice2">Log</button>
+    </div>`).join("")}
+  </section>`;
+}
+function quickLog(){
+  let d=D(),done=Object.values(d.slots).filter(Boolean).length;
+  let cls=done>=8?"green":done>=5?"yellow":"red";
+  let statusTxt=done>=8?"On track today":done>=5?"A little behind today":"Running behind today";
+  return `<section class="card section">
+    <div class="head"><h3>End-of-day log</h3><span>${done}/10</span></div>
+    <div class="logfield"><label class="loglabel">Focused hours</label><input id="hours" type="number" step=".25" min="0" max="16" value="${d.hours}"></div>
+    <div class="logfield"><label class="loglabel">Chapters / topics</label><input id="chapters" value="${d.chapters}"></div>
+    <div class="logfield"><label class="loglabel">What went well</label><input id="win" value="${d.win}"></div>
+    <div class="logfield"><label class="loglabel">Main problem</label><input id="problem" value="${d.problem}"></div>
+    <div class="btnrow"><button class="btn primary" id="saveLog">Save log</button><button class="btn ghost" id="clear">Clear ticks</button></div>
+    <div class="logstatus ${cls}">${statusTxt} · ${done}/10 sessions</div>
+  </section>`;
+}
+
+/* ---------------- pages ---------------- */
+function home(){
+  return `
+  ${countdownRow()}
+  ${passRankRow()}
+  ${todayCard()}
+  ${statsMiniRow()}
+  <div class="grid2">
+    <div class="stack">
+      <section class="card section">
+        <div class="head"><h3>Today's timetable</h3><span>${Object.values(D().slots).filter(Boolean).length}/10 completed</span></div>
+        ${timetableList()}
+      </section>
+      <section class="card section">
+        <div class="head"><h3>Subjects overview</h3><span>equal priority</span></div>
+        ${subjectsTable()}
+      </section>
+    </div>
+    <div class="stack">
+      ${streakCard()}
+      ${quickLog()}
+      ${practicePreview()}
+    </div>
+  </div>`;
+}
+
+function page(k){
+  let s=state.subjects[k],n=S[k].ch.length,phase=s.phase,done=s.p[phase].filter(Boolean).length;
+  return `<section class="card subjecthero">
+    <div style="display:flex;gap:14px;align-items:center">
+      <div class="subbadge" style="background:${S[k].c}">${S[k].icon}</div>
+      <div><div class="pill prog" style="display:inline-block;margin-bottom:4px">${S[k].short}</div><h2>${S[k].name}</h2><p>${["First coverage","1st revision","2nd revision"][phase]} · ${done}/${n} chapters</p></div>
+    </div>
+    <div class="phases">${[0,1,2].map(i=>`<i style="${i<=phase?"background:"+S[k].c:""}"></i>`).join("")}</div>
+  </section>
+  <section class="card section" style="margin-top:14px">
+    <div class="head"><h3>${["First coverage","1st revision","2nd revision"][phase]}</h3><span>${done}/${n} complete</span></div>
+    <div class="chapters">${S[k].ch.map((c,i)=>`<label class="chapter ${s.p[phase][i]?"done":""}"><input type="checkbox" data-ch="${i}" ${s.p[phase][i]?"checked":""} style="accent-color:${S[k].c}"><span class="cname">${i+1}. ${c[0]}</span><span class="weight">${c[1]}</span></label>`).join("")}</div>
+  </section>`;
+}
+
+/* ---------------- practice tracker (drawer) ---------------- */
+function practiceGrid(){
+  return `<div class="practice-grid">${Object.keys(S).map(k=>practiceCard(k)).join("")}</div>`;
+}
+function practiceCard(k){
+  let p=state.subjects[k].practice,t=PRACTICE_TARGET;
+  return `<div class="prac"><div class="ptop"><b>${S[k].icon} ${S[k].name}</b><span class="ppct" style="color:${S[k].c}">${practicePctSub(k)}%</span></div>
+    ${practiceRow(k,"pyq","PYQ sets",p.pyq,t.pyq)}
+    ${practiceRow(k,"mtp","MTPs",p.mtp,t.mtp)}
+    ${practiceRow(k,"rtp","RTPs",p.rtp,t.rtp)}
+  </div>`;
+}
+function practiceRow(k,field,label,val,target){
+  return `<div class="prow"><div><div class="plabel">${label}</div><div class="ptarget">target ${target}+</div></div>
+    <div class="stepper"><button data-dec="${k}:${field}" aria-label="decrease">−</button><span>${val}</span><button data-inc="${k}:${field}" aria-label="increase">+</button></div></div>`;
+}
+
+/* ---------------- events ---------------- */
+function bind(){
+  // Events are delegated from document so re-rendering a page never loses handlers.
+  if(window.__airEventsBound)return;
+  window.__airEventsBound=true;
+
+  document.addEventListener("click",(e)=>{
+    const slotBtn=e.target.closest("[data-slot]");
+    if(slotBtn){
+      e.preventDefault();
+      const i=Number(slotBtn.dataset.slot);
+      const d=D();
+      d.slots["t"+i]=!d.slots["t"+i];
+      save();
+      render();
+      return;
+    }
+
+    const open=e.target.closest("[data-open]");
+    if(open){
+      e.preventDefault();
+      tab=open.dataset.open;
+      render();
+      scrollTo(0,0);
+      return;
+    }
+
+    const inc=e.target.closest("[data-inc]");
+    if(inc){
+      e.preventDefault();
+      const [k,f]=inc.dataset.inc.split(":");
+      state.subjects[k].practice[f]=clamp((state.subjects[k].practice[f]||0)+1,0,20);
+      save(); render();
+      return;
+    }
+
+    const dec=e.target.closest("[data-dec]");
+    if(dec){
+      e.preventDefault();
+      const [k,f]=dec.dataset.dec.split(":");
+      state.subjects[k].practice[f]=clamp((state.subjects[k].practice[f]||0)-1,0,20);
+      save(); render();
+      return;
+    }
+
+    if(e.target.closest("#saveLog")){
+      const d=D();
+      d.hours=document.getElementById("hours")?.value||"";
+      d.chapters=document.getElementById("chapters")?.value||"";
+      d.win=document.getElementById("win")?.value||"";
+      d.problem=document.getElementById("problem")?.value||"";
+      save(); render();
+      return;
+    }
+
+    if(e.target.closest("#clear")){
+      D().slots={};
+      save(); render();
+      return;
+    }
+
+    if(e.target.closest("#openPractice")||e.target.closest("#openPractice2")){
+      setMenu(true);
+      return;
+    }
+  });
+
+  document.addEventListener("change",(e)=>{
+    const ch=e.target.closest("[data-ch]");
+    if(!ch)return;
+    const k=tab;
+    const s=state.subjects[k];
+    if(!s)return;
+    const phase=s.phase;
+    const idx=Number(ch.dataset.ch);
+    if(!Number.isInteger(idx)||idx<0||idx>=S[k].ch.length)return;
+
+    // Write the checkbox state FIRST, then persist. Do not rely on the DOM after render.
+    s.p[phase][idx]=!!ch.checked;
+    adv(k);
+    save();
+    render();
+  });
+}
+
+function render(){
+  navs();
+  document.getElementById("app").innerHTML=tab==="home"?home():page(tab);
+  document.getElementById("drawerPractice").innerHTML=practiceGrid();
+  bind();
+  updateAuthUI();
+}
+
+/* ---------------- side menu open/close ---------------- */
+function setMenu(open){
+  document.getElementById("sideMenu").classList.toggle("open",open);
+  document.getElementById("menuOverlay").classList.toggle("open",open);
+}
+document.getElementById("openMenuSide").onclick=()=>setMenu(true);
+document.getElementById("openMenuTop").onclick=()=>setMenu(true);
+document.getElementById("closeMenu").onclick=()=>setMenu(false);
+document.getElementById("menuOverlay").onclick=()=>setMenu(false);
+
+/* ---------------- auth / cloud sync ---------------- */
+async function signUp(){
+  if(!sb)return alert("Paste your Supabase URL and anon/publishable key into the HTML first.");
+  const email=document.getElementById("email").value.trim(),password=document.getElementById("password").value;
+  if(!email||password.length<6)return alert("Enter an email and a password of at least 6 characters.");
+  const {error}=await sb.auth.signUp({email,password});
+  if(error)return alert(error.message);
+  alert("Account created. If email confirmation is enabled in Supabase, confirm your email, then log in.");
+}
+async function login(){
+  if(!sb)return alert("Paste your Supabase URL and anon/publishable key into the HTML first.");
+  const email=document.getElementById("email").value.trim(),password=document.getElementById("password").value;
+  const {data,error}=await sb.auth.signInWithPassword({email,password});
+  if(error)return alert(error.message);
+  cloudUser=data.user;updateAuthUI();
+  await pullOrPush();
+}
+async function logout(){if(sb)await sb.auth.signOut();cloudUser=null;clearInterval(realtimePollTimer);realtimePollTimer=null;if(realtimeChannel){await sb.removeChannel(realtimeChannel);realtimeChannel=null}updateAuthUI()}
+function initials(email){if(!email)return"••";let n=email.split("@")[0];return n.slice(0,2).toUpperCase()}
+function updateAuthUI(){
+  const dot=document.getElementById("cloudDot"),st=document.getElementById("authStatus"),
+        sync=document.getElementById("sync"),logoutBtn=document.getElementById("logout"),loginBtn=document.getElementById("login"),signupBtn=document.getElementById("signup"),
+        avatarInit=document.getElementById("avatarInit"),whoName=document.getElementById("whoName"),whoSub=document.getElementById("whoSub");
+  
+  if(!SUPABASE_READY){dot.className="cloud-dot warn";st.textContent="Add Supabase keys";sync.style.display="none";logoutBtn.style.display="none";avatarInit.textContent="••";whoName.textContent="Local";whoSub.textContent="no cloud keys";return}
+  if(cloudUser){
+    dot.className="cloud-dot on";st.textContent=st.textContent === "Syncing..." ? "Syncing..." : (cloudUser.email||"Cloud account");
+    sync.style.display="inline-block";logoutBtn.style.display="inline-block";loginBtn.style.display="none";signupBtn.style.display="none";
+    avatarInit.textContent=initials(cloudUser.email);whoName.textContent=(cloudUser.email||"Account").split("@")[0];whoSub.textContent="synced"
+  } else {
+    dot.className="cloud-dot";st.textContent="Not logged in";sync.style.display="none";logoutBtn.style.display="none";loginBtn.style.display="inline-block";signupBtn.style.display="inline-block";
+    avatarInit.textContent="••";whoName.textContent="Local";whoSub.textContent="tap to sync"
+  }
+}
+function stateJson(x){try{return JSON.stringify(x)}catch{return ""}}
+
+function mergeStates(localState,cloudState){
+  const a=normalizeState(localState),b=normalizeState(cloudState);
+  const out=normalizeState(a);
+  Object.keys(S).forEach(k=>{
+    out.subjects[k].phase=Math.max(a.subjects[k].phase,b.subjects[k].phase);
+    for(let ph=0;ph<3;ph++){
+      for(let i=0;i<S[k].ch.length;i++){
+        out.subjects[k].p[ph][i]=!!(a.subjects[k].p[ph][i]||b.subjects[k].p[ph][i]);
+      }
+    }
+    out.subjects[k].practice={
+      pyq:Math.max(a.subjects[k].practice.pyq,b.subjects[k].practice.pyq),
+      mtp:Math.max(a.subjects[k].practice.mtp,b.subjects[k].practice.mtp),
+      rtp:Math.max(a.subjects[k].practice.rtp,b.subjects[k].practice.rtp)
+    };
+  });
+  const days=new Set([...Object.keys(a.logs||{}),...Object.keys(b.logs||{})]);
+  out.logs={};
+  days.forEach(day=>{
+    const la=a.logs?.[day]||{},lb=b.logs?.[day]||{};
+    out.logs[day]={
+      slots:{...(lb.slots||{}),...(la.slots||{})},
+      hours:la.hours||lb.hours||"",
+      chapters:la.chapters||lb.chapters||"",
+      win:la.win||lb.win||"",
+      problem:la.problem||lb.problem||""
+    };
+  });
+  out.streakRecord=Math.max(a.streakRecord||0,b.streakRecord||0);
+  out.meta={updatedAt:Math.max(Number(a.meta?.updatedAt)||0,Number(b.meta?.updatedAt)||0)};
+  return out;
+}
+
+async function pullOrPush(){
+  if(!sb||!cloudUser)return;
+  const {data,error}=await sb.from("tracker_state")
+    .select("state,updated_at")
+    .eq("user_id",cloudUser.id)
+    .maybeSingle();
+  if(error){
+    console.error("Cloud read failed:",error);
+    setCloudStatus("Cloud read failed");
+    return;
+  }
+  if(data?.state && typeof data.state==="object" && Object.keys(data.state).length){
+    const cloudState=normalizeState(data.state);
+    const cloudTime=Date.parse(data.updated_at||"")||Number(cloudState.meta?.updatedAt)||0;
+    const localTime=Number(state.meta?.updatedAt)||0;
+    if(localTime && cloudTime && localTime>cloudTime+1000){
+      // This device has newer work: upload it automatically.
+      await pushCloud();
+    }else if(cloudTime>localTime+1000){
+      state=cloudState;
+      localStorage.setItem("ca_air_v3",JSON.stringify(state));
+      lastCloudStateJson=stateJson(state);
+      render();
+      setCloudStatus("Cloud loaded");
+    }else{
+      // Same/uncertain timestamp: merge instead of asking the user.
+      state=mergeStates(state,cloudState);
+      save();
+      await pushCloud();
+      setCloudStatus("Synced");
+    }
+  }else{
+    await pushCloud();
+    setCloudStatus("Progress uploaded");
+  }
+}
+
+async function pushCloud(){
+  if(!sb||!cloudUser)return;
+  if(cloudWriteInFlight){cloudWriteQueued=true;return;}
+  cloudWriteInFlight=true;
+  try {
+    const payload=normalizeState(state);
+    const json=stateJson(payload);
+    const {error}=await sb.from("tracker_state").upsert({
+      user_id:cloudUser.id, state:payload, updated_at:new Date().toISOString()
+    },{onConflict:"user_id"});
+    if(error)throw error;
+    lastCloudStateJson=json;
+    setCloudStatus("Synced just now");
+  }catch(err){
+    console.error("Sync Error:",err);
+    setCloudStatus("Sync failed — retrying");
+  }finally{
+    cloudWriteInFlight=false;
+    if(cloudWriteQueued){
+      cloudWriteQueued=false;
+      clearTimeout(syncTimer);
+      syncTimer=setTimeout(()=>pushCloud(),150);
+    }
+  }
+}
+
+async function applyCloudState(incoming, cloudUpdatedAt, source="cloud"){
+  if(!incoming || typeof incoming!=="object")return false;
+  const cloudState=normalizeState(incoming);
+  const incomingJson=stateJson(cloudState);
+  if(incomingJson===stateJson(state) || incomingJson===lastCloudStateJson)return false;
+  const incomingTime=Date.parse(cloudUpdatedAt||"")||Number(cloudState.meta?.updatedAt)||0;
+  const localTime=Number(state.meta?.updatedAt)||0;
+  // A cloud update that differs from this device is accepted when it is at least
+  // as recent as the local state. If clocks are close, merge instead of dropping it.
+  if(incomingTime && localTime && incomingTime < localTime-3000)return false;
+  state=mergeStates(state,cloudState);
+  localStorage.setItem("ca_air_v3",JSON.stringify(state));
+  lastCloudStateJson=stateJson(state);
+  render();
+  setCloudStatus(source==="realtime" ? "Updated from cloud" : "Updated from cloud");
+  return true;
+}
+
+async function pollCloudState(){
+  if(!sb||!cloudUser||cloudWriteInFlight)return;
+  try{
+    const {data,error}=await sb.from("tracker_state")
+      .select("state,updated_at")
+      .eq("user_id",cloudUser.id)
+      .maybeSingle();
+    if(error)throw error;
+    if(data?.state && typeof data.state==="object"){
+      const changed=await applyCloudState(data.state,data.updated_at,"poll");
+      if(changed){
+        // Make sure any merged local progress is also stored in the cloud.
+        await pushCloud();
+      }
+    }
+  }catch(err){
+    console.error("Cloud background check failed:",err);
+  }
+}
+
+function startRealtimePoll(){
+  clearInterval(realtimePollTimer);
+  if(!sb||!cloudUser)return;
+  // Realtime is the primary path. This lightweight fallback makes the app
+  // resilient if a browser/network silently drops a Realtime event.
+  realtimePollTimer=setInterval(pollCloudState,4000);
+}
+
+function subscribeRealtime(){
+  if(!sb||!cloudUser)return;
+  if(realtimeChannel){sb.removeChannel(realtimeChannel);realtimeChannel=null;}
+  realtimeChannel=sb.channel("tracker-state-"+cloudUser.id)
+    .on("postgres_changes",{event:"*",schema:"public",table:"tracker_state",filter:"user_id=eq."+cloudUser.id},payload=>{
+      console.log("Supabase Realtime event:",payload);
+      applyCloudState(payload.new?.state,payload.new?.updated_at,"realtime");
+    })
+    .subscribe((status,err)=>{
+      console.log("Supabase Realtime status:",status,err||"");
+      if(status==="SUBSCRIBED")setCloudStatus("Live sync on");
+      else if(status==="CHANNEL_ERROR")setCloudStatus("Live sync unavailable");
+      else if(status==="TIMED_OUT")setCloudStatus("Live sync timed out");
+      else if(status==="CLOSED")setCloudStatus("Live sync closed");
+    });
+  startRealtimePoll();
+}
+
+function setCloudStatus(t){const st=document.getElementById("authStatus");if(cloudUser)st.textContent=t}
+document.getElementById("signup").onclick=signUp;
+document.getElementById("login").onclick=login;
+document.getElementById("logout").onclick=logout;
+document.getElementById("sync").onclick=pushCloud;
+
+// PWA install prompt
+let deferredInstallPrompt=null;
+const installBtn=document.getElementById("installApp");
+window.addEventListener("beforeinstallprompt",e=>{
+  e.preventDefault();
+  deferredInstallPrompt=e;
+  if(installBtn)installBtn.style.display="inline-block";
+});
+if(installBtn){
+  installBtn.onclick=async()=>{
+    if(!deferredInstallPrompt)return;
+    deferredInstallPrompt.prompt();
+    await deferredInstallPrompt.userChoice;
+    deferredInstallPrompt=null;
+    installBtn.style.display="none";
+  };
+}
+window.addEventListener("appinstalled",()=>{deferredInstallPrompt=null;if(installBtn)installBtn.style.display="none";});
+
+if(sb){
+  sb.auth.getSession().then(async ({data})=>{
+    cloudUser=data.session?.user||null;
+    updateAuthUI();
+    if(cloudUser){
+      await pullOrPush();
+      subscribeRealtime();
+    }
+  });
+  sb.auth.onAuthStateChange(async (_event,session)=>{
+    cloudUser=session?.user||null;
+    updateAuthUI();
+    if(cloudUser){
+      await pullOrPush();
+      subscribeRealtime();
+    }else{
+      clearInterval(realtimePollTimer);realtimePollTimer=null;
+      if(realtimeChannel){
+        await sb.removeChannel(realtimeChannel);
+        realtimeChannel=null;
+      }
+    }
+  });
+}else updateAuthUI();
+
+render();
+
+if("serviceWorker" in navigator){
+  window.addEventListener("load",async()=>{
+    try{
+      const reg=await navigator.serviceWorker.register("./sw.js",{scope:"./"});
+      console.log("CA AIR Tracker service worker:",reg.scope);
+    }catch(err){
+      console.warn("SW registration failed",err);
+    }
+  });
+}
+</script>
+</body>
+</html>
