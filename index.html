@@ -346,23 +346,41 @@ const STREAK_HOURS_TARGET=6;
 let tab="home";
 
 /* ---------------- state + migration ---------------- */
+function normalizeState(v){
+  const base=blank();
+  if(!v || typeof v!=="object")return base;
+  const out={subjects:base.subjects,logs:(v.logs&&typeof v.logs==="object")?v.logs:{},streakRecord:Number(v.streakRecord)||0};
+
+  Object.keys(S).forEach(k=>{
+    const incoming=v.subjects?.[k];
+    if(!incoming)return;
+    const n=S[k].ch.length;
+    out.subjects[k]={
+      p:[
+        Array.isArray(incoming.p?.[0])?incoming.p[0].slice(0,n).concat(Array(Math.max(0,n-(incoming.p[0]?.length||0))).fill(false)):Array(n).fill(false),
+        Array.isArray(incoming.p?.[1])?incoming.p[1].slice(0,n).concat(Array(Math.max(0,n-(incoming.p[1]?.length||0))).fill(false)):Array(n).fill(false),
+        Array.isArray(incoming.p?.[2])?incoming.p[2].slice(0,n).concat(Array(Math.max(0,n-(incoming.p[2]?.length||0))).fill(false)):Array(n).fill(false)
+      ],
+      phase:clamp(Number(incoming.phase)||0,0,2),
+      practice:{
+        pyq:clamp(Number(incoming.practice?.pyq)||0,0,20),
+        mtp:clamp(Number(incoming.practice?.mtp)||0,0,20),
+        rtp:clamp(Number(incoming.practice?.rtp)||0,0,20)
+      }
+    };
+  });
+  return out;
+}
 const blank=()=>{let x={};Object.keys(S).forEach(k=>{x[k]={p:[Array(S[k].ch.length).fill(false),Array(S[k].ch.length).fill(false),Array(S[k].ch.length).fill(false)],phase:0,practice:{pyq:0,mtp:0,rtp:0}}});return{subjects:x,logs:{},streakRecord:0}};
 
 function loadState(){
-  let v3=JSON.parse(localStorage.getItem("ca_air_v3")||"null");
-  if(v3)return v3;
-  let v2=JSON.parse(localStorage.getItem("ca_air_v2")||"null");
-  if(v2){
-    Object.keys(S).forEach(k=>{
-      if(!v2.subjects[k])v2.subjects[k]=blank().subjects[k];
-      if(!v2.subjects[k].practice)v2.subjects[k].practice={pyq:0,mtp:0,rtp:0};
-    });
-    return v2;
-  }
-  return blank();
+  let v3=null,v2=null;
+  try{v3=JSON.parse(localStorage.getItem("ca_air_v3")||"null")}catch(e){}
+  try{v2=JSON.parse(localStorage.getItem("ca_air_v2")||"null")}catch(e){}
+  return normalizeState(v3||v2||blank());
 }
 let state=loadState();
-if(typeof state.streakRecord!=="number")state.streakRecord=0;
+localStorage.setItem("ca_air_v3",JSON.stringify(state));
 let cloudUser=null;
 let syncTimer=null;
 
@@ -375,20 +393,32 @@ const autoSync = () => {
 };
 
 const save=()=>{
+  try{
     localStorage.setItem("ca_air_v3",JSON.stringify(state));
-    autoSync();
+  }catch(err){
+    console.error("Local save failed:",err);
+    alert("Your browser blocked local storage. Please allow site storage for this tracker.");
+    return;
+  }
+  autoSync();
 };
-const today=()=>new Date().toISOString().slice(0,10);
+const today=()=>new Intl.DateTimeFormat("en-CA",{timeZone:"Asia/Kolkata"}).format(new Date());
 const diff=(a,b)=>Math.floor((new Date(b)-new Date(a))/86400000);
 
 // Robust Data Initializer for Daily Logs
 const D = () => {
-  let d = state.logs[today()];
-  if (!d) {
-    d = { slots: {}, hours: "", chapters: "", win: "", problem: "" };
-    state.logs[today()] = d;
+  if(!state.logs || typeof state.logs!=="object")state.logs={};
+  const key=today();
+  let d=state.logs[key];
+  if(!d || typeof d!=="object"){
+    d={slots:{},hours:"",chapters:"",win:"",problem:""};
+    state.logs[key]=d;
   }
-  if (!d.slots) d.slots = {}; // Fallback for old corrupt data
+  if(!d.slots || typeof d.slots!=="object")d.slots={};
+  if(d.hours==null)d.hours="";
+  if(d.chapters==null)d.chapters="";
+  if(d.win==null)d.win="";
+  if(d.problem==null)d.problem="";
   return d;
 };
 
@@ -800,35 +830,87 @@ function practiceRow(k,field,label,val,target){
 
 /* ---------------- events ---------------- */
 function bind(){
-  // Bind slot session checkboxes robustly
-  document.querySelectorAll("[data-slot]").forEach(b => b.addEventListener('click', (e) => {
-    let targetSlot = e.currentTarget.dataset.slot;
-    let d = D();
-    d.slots["t"+targetSlot] = !d.slots["t"+targetSlot];
-    save(); render();
-  }));
+  // Events are delegated from document so re-rendering a page never loses handlers.
+  if(window.__airEventsBound)return;
+  window.__airEventsBound=true;
 
-  // Bind subject navigation
-  document.querySelectorAll("[data-open]").forEach(x => x.addEventListener('click', () => {
-      tab=x.dataset.open; render(); scrollTo(0,0)
-  }));
-  
-  // Bind chapter checkboxes correctly without interference
-  document.querySelectorAll("[data-ch]").forEach(x => x.addEventListener('change', (e) => {
-    let s = state.subjects[tab];
-    s.p[s.phase][+e.target.dataset.ch] = e.target.checked;
-    adv(tab); save(); render();
-  }));
+  document.addEventListener("click",(e)=>{
+    const slotBtn=e.target.closest("[data-slot]");
+    if(slotBtn){
+      e.preventDefault();
+      const i=Number(slotBtn.dataset.slot);
+      const d=D();
+      d.slots["t"+i]=!d.slots["t"+i];
+      save();
+      render();
+      return;
+    }
 
-  // Practice counter logic
-  document.querySelectorAll("[data-inc]").forEach(b=>b.addEventListener('click', ()=>{let [k,f]=b.dataset.inc.split(":");state.subjects[k].practice[f]=clamp((state.subjects[k].practice[f]||0)+1,0,20);save();render()}));
-  document.querySelectorAll("[data-dec]").forEach(b=>b.addEventListener('click', ()=>{let [k,f]=b.dataset.dec.split(":");state.subjects[k].practice[f]=clamp((state.subjects[k].practice[f]||0)-1,0,20);save();render()}));
-  
-  let sl=document.getElementById("saveLog");if(sl)sl.onclick=()=>{let d=D();d.hours=document.getElementById("hours").value;d.chapters=document.getElementById("chapters").value;d.win=document.getElementById("win").value;d.problem=document.getElementById("problem").value;save();render();};
-  let c=document.getElementById("clear");if(c)c.onclick=()=>{D().slots={};save();render()};
-  
-  let op=document.getElementById("openPractice");if(op)op.onclick=()=>setMenu(true);
-  let op2=document.getElementById("openPractice2");if(op2)op2.onclick=()=>setMenu(true);
+    const open=e.target.closest("[data-open]");
+    if(open){
+      e.preventDefault();
+      tab=open.dataset.open;
+      render();
+      scrollTo(0,0);
+      return;
+    }
+
+    const inc=e.target.closest("[data-inc]");
+    if(inc){
+      e.preventDefault();
+      const [k,f]=inc.dataset.inc.split(":");
+      state.subjects[k].practice[f]=clamp((state.subjects[k].practice[f]||0)+1,0,20);
+      save(); render();
+      return;
+    }
+
+    const dec=e.target.closest("[data-dec]");
+    if(dec){
+      e.preventDefault();
+      const [k,f]=dec.dataset.dec.split(":");
+      state.subjects[k].practice[f]=clamp((state.subjects[k].practice[f]||0)-1,0,20);
+      save(); render();
+      return;
+    }
+
+    if(e.target.closest("#saveLog")){
+      const d=D();
+      d.hours=document.getElementById("hours")?.value||"";
+      d.chapters=document.getElementById("chapters")?.value||"";
+      d.win=document.getElementById("win")?.value||"";
+      d.problem=document.getElementById("problem")?.value||"";
+      save(); render();
+      return;
+    }
+
+    if(e.target.closest("#clear")){
+      D().slots={};
+      save(); render();
+      return;
+    }
+
+    if(e.target.closest("#openPractice")||e.target.closest("#openPractice2")){
+      setMenu(true);
+      return;
+    }
+  });
+
+  document.addEventListener("change",(e)=>{
+    const ch=e.target.closest("[data-ch]");
+    if(!ch)return;
+    const k=tab;
+    const s=state.subjects[k];
+    if(!s)return;
+    const phase=s.phase;
+    const idx=Number(ch.dataset.ch);
+    if(!Number.isInteger(idx)||idx<0||idx>=S[k].ch.length)return;
+
+    // Write the checkbox state FIRST, then persist. Do not rely on the DOM after render.
+    s.p[phase][idx]=!!ch.checked;
+    adv(k);
+    save();
+    render();
+  });
 }
 
 function render(){
@@ -885,21 +967,46 @@ function updateAuthUI(){
 }
 async function pullOrPush(){
   if(!sb||!cloudUser)return;
-  const {data,error}=await sb.from("tracker_state").select("state,updated_at").eq("user_id",cloudUser.id).maybeSingle();
-  if(error)return alert("Cloud read failed: "+error.message);
-  if(data && data.state && Object.keys(data.state).length){
-    const useCloud=confirm("Cloud progress found. Load cloud progress and replace this device's local tracker?");
-    if(useCloud){
-        state=data.state;
-        if(typeof state.streakRecord!=="number")state.streakRecord=0;
-        localStorage.setItem("ca_air_v3",JSON.stringify(state)); // save locally without triggering sync back up yet
+
+  const {data,error}=await sb.from("tracker_state")
+    .select("state,updated_at")
+    .eq("user_id",cloudUser.id)
+    .maybeSingle();
+
+  if(error){
+    console.error("Cloud read failed:",error);
+    setCloudStatus("Cloud read failed");
+    return;
+  }
+
+  if(data?.state && typeof data.state==="object" && Object.keys(data.state).length){
+    const cloudState=data.state;
+    const hasLocalProgress =
+      Object.keys(state.logs||{}).length>0 ||
+      completedChaptersCount()>0 ||
+      Object.keys(state.subjects||{}).some(k=>
+        Object.values(state.subjects[k]?.practice||{}).some(v=>Number(v)>0));
+
+    if(hasLocalProgress){
+      const useCloud=confirm(
+        "Cloud progress found.\\n\\nOK = load cloud progress on this device.\\nCancel = keep this device's progress and upload it to the cloud."
+      );
+      if(useCloud){
+        state=normalizeState(cloudState);
+        localStorage.setItem("ca_air_v3",JSON.stringify(state));
         render();
         setCloudStatus("Cloud loaded");
-    } else {
+      }else{
         await pushCloud();
-        setCloudStatus("Local kept");
+        setCloudStatus("Local kept + uploaded");
+      }
+    }else{
+      state=normalizeState(cloudState);
+      localStorage.setItem("ca_air_v3",JSON.stringify(state));
+      render();
+      setCloudStatus("Cloud loaded");
     }
-  } else {
+  }else{
     await pushCloud();
     setCloudStatus("Local progress uploaded");
   }
