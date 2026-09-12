@@ -959,7 +959,7 @@ function bind(){
 
     // A tick means a promise: confirm completion before recording it. Unticking never asks.
     if(ch.checked){
-      const ok=confirm("⚖️ TRUTH CHECK\n\nAre you true to your answer that you have completed this chapter fully — including the "module questions" — without leaving anything unfinished?\n\n“I will speak the truth. I promise.”\n\nPress OK only if you genuinely completed it.");
+      const ok=confirm("⚖️ TRUTH CHECK\n\nAre you true to your answer that you have completed this chapter fully — including the module questions — without leaving anything unfinished?\n\n“I will speak the truth. I promise.”\n\nPress OK only if you genuinely completed it.");
       if(!ok){
         ch.checked=false;
         return;
